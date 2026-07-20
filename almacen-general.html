@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layout 3D – Almacén Argenparts AG</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0d1b2a; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+canvas { display:block; }
+#ui { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; }
+
+#title {
+  position:absolute; top:14px; left:50%; transform:translateX(-50%);
+  background:rgba(31,78,121,.93); color:#fff; padding:9px 28px;
+  border-radius:50px; font-size:15px; font-weight:700; letter-spacing:.8px;
+  box-shadow:0 2px 16px rgba(0,0,0,.5); white-space:nowrap;
+}
+#tabs { position:absolute; top:14px; left:14px; display:flex; gap:8px; pointer-events:auto; }
+.tab {
+  background:rgba(20,50,90,.85); color:#aac; border:1px solid rgba(100,160,220,.3);
+  padding:7px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;
+  transition:.2s; user-select:none;
+}
+.tab:hover { background:rgba(46,117,182,.9); color:#fff; }
+.tab.on { background:#2E75B6; color:#fff; border-color:#5ca3e0; }
+
+#stats {
+  position:absolute; top:14px; right:14px;
+  background:rgba(10,25,50,.92); color:#cde; border-radius:10px;
+  padding:12px 18px; font-size:12px; line-height:2.1;
+  border:1px solid rgba(100,160,220,.2); pointer-events:auto; min-width:175px;
+}
+#stats .lbl { color:#7aabcc; font-size:10px; text-transform:uppercase; letter-spacing:.4px; }
+#stats b { color:#FFD700; font-size:14px; }
+
+#legend {
+  position:absolute; bottom:14px; right:14px;
+  background:rgba(255,255,255,.97); border-radius:12px;
+  padding:13px 16px; min-width:200px;
+  box-shadow:0 4px 22px rgba(0,0,0,.4); pointer-events:auto;
+}
+#legend h4 { color:#1F4E79; font-size:11px; margin-bottom:9px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
+.li { display:flex; align-items:center; gap:9px; margin:5px 0; }
+.lc { width:14px; height:14px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,.12); }
+.ll { font-size:11px; color:#333; }
+
+#rack-info {
+  position:absolute; bottom:14px; left:14px;
+  background:rgba(10,25,50,.9); color:#cde; border-radius:10px;
+  padding:10px 14px; font-size:11px; line-height:1.8;
+  border:1px solid rgba(100,160,220,.2);
+}
+#rack-info b { color:#FFD700; }
+#hint {
+  position:absolute; bottom:100px; left:14px;
+  background:rgba(0,0,0,.5); color:rgba(255,255,255,.7);
+  border-radius:8px; padding:7px 12px; font-size:11px; line-height:1.9;
+}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="title"> LAYOUT 3D – ALMACÉN ARGENPARTS AG</div>
+  <div id="tabs">
+    <a class="tab" href="./" style="text-decoration:none;">◄ Menú</a>
+    <button class="tab on" onclick="switchW(1,this)">Bodegas 1 · 2 · 3 · 5</button>
+    <button class="tab"    onclick="switchW(7,this)">Bodega 7</button>
+  </div>
+  <div id="stats">
+    <span class="lbl">Racks</span><br><b id="s-racks">18</b><br>
+    <span class="lbl">Módulos totales</span><br><b id="s-mods">181</b><br>
+    <span class="lbl">Posiciones (mód × niv)</span><br><b id="s-pos">660</b>
+  </div>
+  <div id="legend">
+    <h4>Leyenda de zonas</h4>
+    <div class="li"><div class="lc" style="background:#2E75B6"></div><div class="ll">Rack almacenamiento (4 niv.)</div></div>
+    <div class="li"><div class="lc" style="background:#70AD47"></div><div class="ll">Rack ecommerce (3 niv.)</div></div>
+    <div class="li"><div class="lc" style="background:#E2EFDA"></div><div class="ll">Zona MELI / Amazon / Shopify</div></div>
+    <div class="li"><div class="lc" style="background:#C6EFCE"></div><div class="ll">Envío / Recibo / Maquila</div></div>
+    <div class="li"><div class="lc" style="background:#FFE599"></div><div class="ll">Área operativa / Mesas</div></div>
+    <div class="li"><div class="lc" style="background:#D6DCE4"></div><div class="ll">Administrativo</div></div>
+    <div class="li"><div class="lc" style="background:#FCE4D6"></div><div class="ll">Autozone / Devoluciones</div></div>
+    <div class="li"><div class="lc" style="background:#D9B3FF"></div><div class="ll">Cuarto fotografía</div></div>
+  </div>
+  <div id="rack-info">
+    <b>Estructura de racks:</b><br>
+    ■ Mayoría: piso + 3 niveles = <b>4 niveles</b><br>
+    ■ Racks A,B,C,D,E: piso + 2 niveles = <b>3 niveles</b><br>
+    ■ Números = módulos horizontales en piso
+  </div>
+  <div id="hint"> Arrastrar: Rotar &nbsp;|&nbsp; Rueda: Zoom<br>Clic derecho: Mover</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SCENE
+// ═══════════════════════════════════════════════════════════════
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d1b2a);
+scene.fog = new THREE.FogExp2(0x0d1b2a, 0.005);
+
+var camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 600);
+camera.position.set(25, 45, 85);
+
+var renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+var ambLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambLight);
+var sun = new THREE.DirectionalLight(0xfff8e0, 1.0);
+sun.position.set(30, 80, 50);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
+sun.shadow.camera.top=80;   sun.shadow.camera.bottom=-80;
+sun.shadow.camera.far=200;
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(0x87CEEB, 0x3a4030, 0.4));
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+var matPost = new THREE.MeshPhongMaterial({ color:0x777788 });
+
+function makeSprite(text, fg, bg, cw, ch) {
+  cw=cw||256; ch=ch||52;
+  var cv=document.createElement('canvas');
+  cv.width=cw; cv.height=ch;
+  var ctx=cv.getContext('2d');
+  ctx.fillStyle=bg||'rgba(255,255,255,0.9)';
+  ctx.fillRect(3,3,cw-6,ch-6);
+  ctx.fillStyle=fg||'#1F4E79';
+  var lines=text.split('\n');
+  var fs=Math.min(18,Math.floor(ch/(lines.length+0.7)));
+  ctx.font='bold '+fs+'px Arial';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(var i=0;i<lines.length;i++){
+    ctx.fillText(lines[i], cw/2, ch/2+(i-(lines.length-1)/2)*(fs+3));
+  }
+  var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),transparent:true}));
+  return sp;
+}
+
+function addZoneFloor(parent, x, z, w, d, color) {
+  var geo=new THREE.PlaneGeometry(w,d);
+  var m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:color,transparent:true,opacity:0.82}));
+  m.rotation.x=-Math.PI/2; m.position.set(x+w/2,0.01,z+d/2); m.receiveShadow=true;
+  parent.add(m);
+  var el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x444455}));
+  el.rotation.x=-Math.PI/2; el.position.set(x+w/2,0.02,z+d/2);
+  parent.add(el);
+}
+
+function addZoneLabel(parent, text, x, z, w, d, fg, bg, scOverride) {
+  var sp=makeSprite(text,fg||'#fff',bg||'rgba(31,78,121,0.88)',280,58);
+  sp.position.set(x+w/2, 0.06, z+d/2);
+  var sc= scOverride || Math.min(w*0.85,10);
+  sp.scale.set(sc, sc*0.21, 1);
+  parent.add(sp);
+}
+
+// ─── RACK FUNCTION ──────────────────────────────────────────────
+// modules  = número de módulos horizontales (largo)
+// levels   = número de niveles de almacenamiento (piso + superiores)
+//            4 = piso + 3 niveles   |   3 = piso + 2 niveles
+// orient   = 'z' (rack se extiende hacia +Z)  |  'x' (hacia +X)
+// x, z     = posición del extremo de inicio del rack
+function addRack(parent, x, z, modules, levels, orient, opts) {
+  orient=orient||'z'; opts=opts||{};
+  var ML = opts.modLen  || 1.05;   // largo por módulo (m)
+  var RW = opts.rackW   || 0.95;   // ancho del rack (perpendicular)
+  var LH = opts.levelH  || 0.58;   // altura entre niveles
+  var PT = 0.065;                  // grosor del poste
+  var BT = 0.045;                  // grosor de la viga/shelf
+
+  var totalLen = modules * ML;
+  var totalH   = levels  * LH;
+
+  var g = new THREE.Group();
+
+  // ── Postes verticales: (modules+1) × 2 lados ──────────────────
+  var postGeo = new THREE.BoxGeometry(PT, totalH, PT);
+  for(var m=0; m<=modules; m++){
+    for(var s=0; s<2; s++){
+      var post = new THREE.Mesh(postGeo, matPost);
+      var lp = m*ML - totalLen/2;
+      var wp = (s===0 ? -1 : 1)*(RW/2-PT/2);
+      post.position.set(
+        orient==='z' ? wp : lp,
+        totalH/2,
+        orient==='z' ? lp : wp
+      );
+      post.castShadow=true;
+      g.add(post);
+    }
+  }
+
+  // ── Vigas/shelves: (levels+1) × modules ───────────────────────
+  var beamColor = opts.color || 0x5B9BD5;
+  var beamMat   = new THREE.MeshPhongMaterial({color:beamColor});
+  for(var lv=0; lv<=levels; lv++){
+    for(var mb=0; mb<modules; mb++){
+      var bLen = ML - PT;
+      var beamGeo = orient==='z'
+        ? new THREE.BoxGeometry(RW-PT*2, BT, bLen)
+        : new THREE.BoxGeometry(bLen, BT, RW-PT*2);
+      var beam = new THREE.Mesh(beamGeo, beamMat);
+      var lc = mb*ML + ML/2 - totalLen/2;
+      beam.position.set(
+        orient==='z' ? 0 : lc,
+        lv*LH,
+        orient==='z' ? lc : 0
+      );
+      beam.castShadow=true; beam.receiveShadow=true;
+      g.add(beam);
+    }
+  }
+
+  // ── Cajas de producto simuladas ────────────────────────────────
+  var bColors=[0x4472C4,0x70AD47,0xED7D31,0x5B9BD5,0xC55A11,0x264478,0x375623,0xFF7F7F];
+  var bLen2, bW2, bH2;
+  for(var lv2=0; lv2<levels; lv2++){
+    for(var mb2=0; mb2<modules; mb2++){
+      if(Math.random()>0.28){
+        bH2 = LH*0.52;
+        bLen2 = ML*0.30 + Math.random()*ML*0.15;
+        bW2   = (RW-PT*2)*0.48 + Math.random()*(RW-PT*2)*0.2;
+        var boxGeo = orient==='z'
+          ? new THREE.BoxGeometry(bW2, bH2, bLen2)
+          : new THREE.BoxGeometry(bLen2, bH2, bW2);
+        var box = new THREE.Mesh(boxGeo,
+          new THREE.MeshPhongMaterial({color:bColors[Math.floor(Math.random()*bColors.length)]}));
+        var lc2 = mb2*ML + ML/2 - totalLen/2 + (Math.random()-0.5)*(ML*0.35);
+        var xOff = (Math.random()-0.5)*((RW-PT*2)*0.38);
+        box.position.set(
+          orient==='z' ? xOff : lc2,
+          lv2*LH + BT + bH2/2,
+          orient==='z' ? lc2 : xOff
+        );
+        box.castShadow=true;
+        g.add(box);
+      }
+    }
+  }
+
+  // ── Posicionar grupo ───────────────────────────────────────────
+  g.position.set(
+    orient==='z' ? x : x+totalLen/2,
+    0,
+    orient==='z' ? z+totalLen/2 : z
+  );
+  parent.add(g);
+
+  // ── Etiqueta encima del rack ───────────────────────────────────
+  if(opts.label){
+    var labelLines = opts.label+'\n'+modules+' mód · '+levels+' niv';
+    var sp=makeSprite(labelLines,'#FFFFFF','rgba(31,78,121,0.93)',220,50);
+    sp.position.set(
+      orient==='z' ? x          : x+totalLen/2,
+      totalH+0.65,
+      orient==='z' ? z+totalLen/2 : z
+    );
+    sp.scale.set(3.5, 0.8, 1);
+    parent.add(sp);
+  }
+
+  return {totalLen:totalLen, totalH:totalH};
+}
+
+function addSolidBox(parent, x, z, w, d, h, color, lbl){
+  var m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshPhongMaterial({color:color}));
+  m.position.set(x+w/2,h/2,z+d/2); m.castShadow=true; m.receiveShadow=true;
+  parent.add(m);
+  if(lbl){
+    var sp=makeSprite(lbl,'#FFF','rgba(50,30,10,0.82)',190,42);
+    sp.position.set(x+w/2,h+0.5,z+d/2);
+    sp.scale.set(2.8,0.65,1);
+    parent.add(sp);
+  }
+}
+
+function addWalls(parent,W,D,H){
+  H=H||8;
+  var mat=new THREE.MeshPhongMaterial({color:0xE8EEF5,transparent:true,opacity:0.15,side:THREE.DoubleSide});
+  var fw=new THREE.Mesh(new THREE.PlaneGeometry(W,H),mat);
+  fw.position.set(W/2,H/2,0); parent.add(fw);
+  var bw=fw.clone(); bw.position.set(W/2,H/2,D); parent.add(bw);
+  var lw=new THREE.Mesh(new THREE.PlaneGeometry(D,H),mat);
+  lw.rotation.y=Math.PI/2; lw.position.set(0,H/2,D/2); parent.add(lw);
+  var rw=lw.clone(); rw.position.set(W,H/2,D/2); parent.add(rw);
+}
+
+function addFloor(parent,W,D){
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshLambertMaterial({color:0xBBBBBB}));
+  m.rotation.x=-Math.PI/2; m.position.set(W/2,0,D/2); m.receiveShadow=true;
+  parent.add(m);
+  var grid=new THREE.GridHelper(Math.max(W,D),Math.max(W,D),0x888888,0xCCCCCC);
+  grid.position.set(W/2,0.005,D/2); grid.material.opacity=0.2; grid.material.transparent=true;
+  parent.add(grid);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WAREHOUSE 1 – Bodegas 1, 2, 3, 5
+//   Módulos se extienden en dirección Z (norte→sur)
+//   Racks A,B,C,D,E → 3 niveles   |   Resto → 4 niveles
+// ═══════════════════════════════════════════════════════════════
+var wh1 = new THREE.Group();
+scene.add(wh1);
+
+(function(){
+  var W=52, D=70;
+  addFloor(wh1,W,D);
+
+  // ZONAS DE PISO
+  addZoneFloor(wh1, 14,  0, 13, 20, 0x2E75B6);  // Bodega 3
+  addZoneFloor(wh1, 27,  0, 25, 20, 0x1F4E79);  // Bodega 5
+  addZoneFloor(wh1,  0, 19, W,   3, 0xCCCCCC);  // Túnel / corredor
+  addZoneFloor(wh1,  0, 22, 15, 26, 0x4472C4);  // Bodega 2 B2B
+  addZoneFloor(wh1, 20, 22, 14, 14, 0xD9EAD3);  // Ecommerce
+  addZoneFloor(wh1, 22, 38, 16, 20, 0xE2EFDA);  // MELI / Amazon
+  addZoneFloor(wh1, 28, 24,  6,  7, 0xFCE4D6);  // Marketing
+  addZoneFloor(wh1,  3, 48, 13, 10, 0xC6EFCE);  // Maquila
+  addZoneFloor(wh1,  0, 48,  3, 10, 0xFCE4D6);  // Autozone
+  addZoneFloor(wh1,  0, 44,  7,  4, 0xFFE599);  // Mesas soluciones
+  addZoneFloor(wh1,  0, 58, 16, 12, 0xD6DCE4);  // Admin
+  addZoneFloor(wh1,  0, 25,  4, 12, 0xC6EFCE);  // Salida / envío
+  addZoneFloor(wh1, 46, 15,  6,  7, 0xC6EFCE);  // Recibo / tarimas
+  addZoneFloor(wh1, 30, 48,  6,  6, 0xFFE599);  // Taller
+  addZoneFloor(wh1, 20, 35, 12,  4, 0xFFF2CC);  // Racks online / drop
+
+  // ETIQUETAS DE ZONAS
+  addZoneLabel(wh1,'BODEGA 3\nProd. para Venta',  14,  0,13,20,'#fff','rgba(46,117,182,0.88)');
+  addZoneLabel(wh1,'BODEGA 5\nProd. Terminado',   27,  0,25,20,'#fff','rgba(31,78,121,0.88)');
+  addZoneLabel(wh1,'TÚNEL PRINCIPAL',              0, 19,W,  3,'#444','rgba(200,200,200,0.7)');
+  addZoneLabel(wh1,'BODEGA 2 · B2B',              0, 22,15,26,'#fff','rgba(68,114,196,0.88)');
+  addZoneLabel(wh1,'ECOMMERCE',                   20, 22,14,14,'#fff','rgba(80,150,80,0.88)');
+  addZoneLabel(wh1,'MELI / AMAZON\n/ SHOPIFY',    22, 38,16,20,'#fff','rgba(50,120,60,0.88)');
+  addZoneLabel(wh1,'MARKETING',                   28, 24, 6, 7,'#fff','rgba(180,80,40,0.88)');
+  addZoneLabel(wh1,'MAQUILA',                      3, 48,13,10,'#fff','rgba(80,150,80,0.88)');
+  addZoneLabel(wh1,'AUTOZONE',                     0, 48, 3,10,'#fff','rgba(180,80,40,0.88)');
+  addZoneLabel(wh1,'MESAS\nSOLUCIONES',            0, 44, 7, 4,'#333','rgba(255,220,0,0.85)');
+  addZoneLabel(wh1,'ADMIN / COMEDOR\n/ LOCKERS',   0, 58,16,12,'#fff','rgba(100,115,140,0.88)');
+  addZoneLabel(wh1,'ENVÍO\nSALIDA',                0, 25, 4,12,'#fff','rgba(50,140,50,0.88)');
+  addZoneLabel(wh1,'RECIBO\nTARIMAS',             46, 15, 6, 7,'#fff','rgba(50,140,50,0.88)');
+  addZoneLabel(wh1,'TALLER',                      30, 48, 6, 6,'#333','rgba(220,170,0,0.85)');
+  addZoneLabel(wh1,'RACKS ONLINE\n/ DROP',        20, 35,12, 4,'#555','rgba(255,245,180,0.85)');
+
+  // ════════════════════════════════════════════════════════════
+  // RACKS – SECCIÓN SUPERIOR (Bodega 3 y 5)
+  //   Todos se extienden hacia el SUR (+Z), 4 niveles (piso+3)
+  //   Los módulos están numerados de norte a sur (12→1 ó 10→1)
+  // ════════════════════════════════════════════════════════════
+  // BODEGA 3
+  addRack(wh1, 15,  1, 12, 4, 'z', {label:'Rack L',  color:0x5B9BD5});
+  addRack(wh1, 20,  1, 12, 4, 'z', {label:'Rack S',  color:0x5B9BD5});
+  addRack(wh1, 22,  1, 12, 4, 'z', {label:'Rack T',  color:0x5B9BD5});
+
+  // BODEGA 5
+  addRack(wh1, 29,  1, 10, 4, 'z', {label:'Rack O',  color:0x3D7AB3});
+  addRack(wh1, 34,  1, 12, 4, 'z', {label:'Rack P',  color:0x3D7AB3});
+  addRack(wh1, 36,  1, 12, 4, 'z', {label:'Rack N',  color:0x3D7AB3});
+  addRack(wh1, 41,  1, 11, 4, 'z', {label:'Rack M',  color:0x3D7AB3, rackW:1.0});
+  addRack(wh1, 46,  1,  8, 4, 'z', {label:'Rack R',  color:0x3D7AB3});
+
+  // ════════════════════════════════════════════════════════════
+  // RACKS – SECCIÓN MEDIA (Bodega 2 / Ecommerce)
+  //   Rack D y E: 3 niveles (excepción)
+  // ════════════════════════════════════════════════════════════
+  addRack(wh1,  4, 23,  6, 4, 'z', {label:'Rack K',  color:0x6699CC});
+  addRack(wh1, 14, 23, 13, 3, 'z', {label:'Rack D',  color:0x70AD47}); // excepción 3 niv
+  addRack(wh1, 22, 23,  5, 3, 'z', {label:'Rack E',  color:0x70AD47}); // excepción 3 niv
+
+  // ════════════════════════════════════════════════════════════
+  // RACKS – SECCIÓN INFERIOR (Bodega 2 ampliada + MELI/Amazon)
+  //   Racks A, B, C: 3 niveles (excepción)
+  // ════════════════════════════════════════════════════════════
+  addRack(wh1,  1, 35, 10, 4, 'z', {label:'Rack H',  color:0x6699CC});
+  addRack(wh1,  5, 32, 12, 4, 'z', {label:'Rack I',  color:0x6699CC});
+  addRack(wh1,  7, 32, 12, 4, 'z', {label:'Rack J',  color:0x6699CC});
+  addRack(wh1, 11, 32, 10, 4, 'z', {label:'Rack F',  color:0x6699CC});
+  addRack(wh1, 24, 30, 10, 3, 'z', {label:'Rack C',  color:0x70AD47}); // excepción 3 niv
+  addRack(wh1, 26, 30, 10, 3, 'z', {label:'Rack B',  color:0x70AD47}); // excepción 3 niv
+  addRack(wh1, 29, 30, 12, 3, 'z', {label:'Rack A\nMELI FULL', color:0x70AD47, rackW:1.1}); // excepción 3 niv
+
+  // OBJETOS / EQUIPOS
+  addSolidBox(wh1,  1, 44,  2.2, 1.5, 0.85, 0xA07850, 'Mesa 1');
+  addSolidBox(wh1,  3.5,44, 2.2, 1.5, 0.85, 0xA07850, 'Mesa 2');
+  addSolidBox(wh1, 12, 37,  2.2, 2.2, 1.5,  0x888898, 'Emplayadora');
+  addSolidBox(wh1, 31, 48,  3,   3,   1.1,  0x7B6B47, 'Taller');
+  addSolidBox(wh1,  1, 61,  5,   3.5, 2.6,  0xB0B8C8, 'Oficinas');
+  addSolidBox(wh1,  7, 61,  3.5, 3,   1.1,  0x8090A0, 'Lockers');
+  addSolidBox(wh1,  1, 65,  8,   3.5, 1.0,  0x9092A0, 'Comedor');
+
+  // ── CUADRÍCULA + COORDENADAS EN PISO ──────────────────────────
+  // Líneas de cuadrante cada 4 m (gris sutil)
+  var gc1=0x666666;
+  for(var qx1=4;qx1<W;qx1+=4){ addFloorLine(wh1,qx1,0,qx1,D,0.06,gc1); }
+  for(var qz1=4;qz1<D;qz1+=4){ addFloorLine(wh1,0,qz1,W,qz1,0.06,gc1); }
+
+  // Etiquetas eje X (amarillo) — a lo largo de la pared z=0
+  for(var ax1=0;ax1<=W;ax1+=4){
+    var spax1=makeSprite('X='+ax1,'#FFD700','rgba(0,0,0,0.82)',86,28);
+    spax1.position.set(ax1,0.35,0.8); spax1.scale.set(1.35,0.45,1); wh1.add(spax1);
+  }
+  // Etiquetas eje Z (celeste) — a lo largo de la pared x=0
+  for(var az1=0;az1<=D;az1+=4){
+    var spaz1=makeSprite('Z='+az1,'#66DDFF','rgba(0,0,0,0.82)',86,28);
+    spaz1.position.set(0.8,0.35,az1); spaz1.scale.set(1.35,0.45,1); wh1.add(spaz1);
+  }
+
+  // Líneas de demarcación de zona (perimetro visible en piso)
+  addFloorLine(wh1,  0,  0,  W,  0, 0.20, 0x111111);  // frente
+  addFloorLine(wh1,  0,  D,  W,  D, 0.20, 0x111111);  // fondo
+  addFloorLine(wh1,  0,  0,  0,  D, 0.20, 0x111111);  // izquierda
+  addFloorLine(wh1,  W,  0,  W,  D, 0.20, 0x111111);  // derecha
+  // Separador Bodega 3 / Bodega 5 (x=27)
+  addFloorLine(wh1, 27,  0, 27, 20, 0.14, 0xFFCC00);
+  // Túnel principal (z=19 y z=22)
+  addFloorLine(wh1,  0, 19,  W, 19, 0.14, 0xAAAAAA);
+  addFloorLine(wh1,  0, 22,  W, 22, 0.14, 0xAAAAAA);
+  // Separador Bodega2 / Ecommerce (x=15, z=22-38)
+  addFloorLine(wh1, 15, 22, 15, 48, 0.12, 0xFFCC00);
+  // Separador Ecommerce / carga (x=34, z=22-58)
+  addFloorLine(wh1, 34, 22, 34, 58, 0.12, 0xFFCC00);
+
+  addWalls(wh1,W,D,9);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// OBJETOS DETALLADOS – BODEGA 7
+// ═══════════════════════════════════════════════════════════════
+
+// Mesa de trabajo industrial (tablero + 4 patas + travesaños)
+function addWorkTable(parent, x, z, w, d, rotY, lbl) {
+  var g=new THREE.Group();
+  var topMat=new THREE.MeshPhongMaterial({color:0xC8B480});
+  var legMat=new THREE.MeshPhongMaterial({color:0x778899});
+  // Tablero
+  var top=new THREE.Mesh(new THREE.BoxGeometry(w,0.05,d),topMat);
+  top.position.set(0,0.88,0); top.castShadow=true; g.add(top);
+  // Borde metálico
+  var rim=new THREE.Mesh(new THREE.BoxGeometry(w+0.02,0.04,d+0.02),
+    new THREE.MeshPhongMaterial({color:0x9090A0}));
+  rim.position.set(0,0.858,0); g.add(rim);
+  // 4 patas
+  var lGeo=new THREE.BoxGeometry(0.05,0.85,0.05);
+  [[-w/2+0.04,-d/2+0.04],[w/2-0.04,-d/2+0.04],
+   [-w/2+0.04, d/2-0.04],[w/2-0.04, d/2-0.04]].forEach(function(p){
+    var l=new THREE.Mesh(lGeo,legMat); l.position.set(p[0],0.425,p[1]); l.castShadow=true; g.add(l);
+  });
+  // Travesaños laterales
+  var cbGeo=new THREE.BoxGeometry(w-0.1,0.03,0.03);
+  [-d/2+0.04,d/2-0.04].forEach(function(pz){
+    var cb=new THREE.Mesh(cbGeo,legMat); cb.position.set(0,0.3,pz); g.add(cb);
+  });
+  if(lbl){
+    var sp=makeSprite(lbl,'#FFF','rgba(70,55,20,0.88)',180,38);
+    sp.position.set(0,1.1,0); sp.scale.set(2.6,0.58,1); g.add(sp);
+  }
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// Emplayadora automática (stretch wrapper)
+function addEmplayadora(parent, x, z) {
+  var g=new THREE.Group();
+  // Tornamesa (turntable) base
+  var tBase=new THREE.Mesh(new THREE.CylinderGeometry(0.82,0.88,0.10,32),
+    new THREE.MeshPhongMaterial({color:0x333344}));
+  tBase.position.set(0,0.05,0); tBase.castShadow=true; g.add(tBase);
+  // Plato giratorio
+  var disc=new THREE.Mesh(new THREE.CylinderGeometry(0.76,0.76,0.05,32),
+    new THREE.MeshPhongMaterial({color:0x556677}));
+  disc.position.set(0,0.125,0); g.add(disc);
+  // Franjas amarillas en plato
+  for(var i=0;i<6;i++){
+    var st=new THREE.Mesh(new THREE.BoxGeometry(1.45,0.006,0.07),
+      new THREE.MeshPhongMaterial({color:0xFFCC00}));
+    st.rotation.y=i*Math.PI/6; st.position.set(0,0.152,0); g.add(st);
+  }
+  // Base del mástil
+  var mBase=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.14,0.30),
+    new THREE.MeshPhongMaterial({color:0x2a2a3a}));
+  mBase.position.set(0.76,0.07,-0.12); g.add(mBase);
+  // Mástil vertical
+  var mast=new THREE.Mesh(new THREE.BoxGeometry(0.10,2.4,0.10),
+    new THREE.MeshPhongMaterial({color:0x1a1a28}));
+  mast.position.set(0.76,1.3,-0.12); mast.castShadow=true; g.add(mast);
+  // Carro porta-rollo (carriage)
+  var car=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.24,0.16),
+    new THREE.MeshPhongMaterial({color:0x445566}));
+  car.position.set(0.76,1.45,-0.12); g.add(car);
+  // Brazo horizontal
+  var arm=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.07,0.68),
+    new THREE.MeshPhongMaterial({color:0x334455}));
+  arm.position.set(0.76,1.45,0.22); g.add(arm);
+  // Rollo de film (transparente)
+  var roll=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.10,0.22,20),
+    new THREE.MeshPhongMaterial({color:0xCCDDEE,transparent:true,opacity:0.6}));
+  roll.rotation.x=Math.PI/2; roll.position.set(0.76,1.45,0.62); g.add(roll);
+  // Panel de control
+  var panel=new THREE.Mesh(new THREE.BoxGeometry(0.23,0.37,0.07),
+    new THREE.MeshPhongMaterial({color:0x111122}));
+  panel.position.set(0.76,0.56,-0.22); g.add(panel);
+  // Botones LED
+  [0xFF2222,0x22CC22,0xFFFF00].forEach(function(c,i){
+    var btn=new THREE.Mesh(new THREE.SphereGeometry(0.026,8,8),
+      new THREE.MeshPhongMaterial({color:c,emissive:c,emissiveIntensity:0.5}));
+    btn.position.set(0.76,0.64-i*0.10,-0.26); g.add(btn);
+  });
+  // Luz de advertencia (ámbar)
+  var wl=new THREE.Mesh(new THREE.SphereGeometry(0.075,10,10),
+    new THREE.MeshPhongMaterial({color:0xFF8800,emissive:0xFF5500,emissiveIntensity:0.7}));
+  wl.position.set(0.76,2.55,-0.12); g.add(wl);
+  // Sombrero del mástil
+  var top2=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,0.06,12),
+    new THREE.MeshPhongMaterial({color:0x222233}));
+  top2.position.set(0.76,2.62,-0.12); g.add(top2);
+  // Etiqueta
+  var sp=makeSprite('EMPLAYADORA\nAUTOMÁTICA','#FFF','rgba(20,20,50,0.92)',230,52);
+  sp.position.set(0.3,2.95,0); sp.scale.set(3.3,0.75,1); g.add(sp);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Encintadora semi-automática (case sealer / tape machine)
+function addEncintadora(parent, x, z, rotY) {
+  var g=new THREE.Group();
+  var bodyMat=new THREE.MeshPhongMaterial({color:0x2255AA});
+  var frameMat=new THREE.MeshPhongMaterial({color:0x111133});
+  var rollerMat=new THREE.MeshPhongMaterial({color:0x888888});
+  var tapeMat=new THREE.MeshPhongMaterial({color:0xFFDD00,emissive:0xAA8800,emissiveIntensity:0.3});
+  // Cuerpo principal inferior
+  var body=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.30,0.70),bodyMat);
+  body.position.set(0,0.15,0); body.castShadow=true; g.add(body);
+  // Patas / base
+  [[-0.22,0.30],[0.22,0.30],[-0.22,-0.30],[0.22,-0.30]].forEach(function(p){
+    var leg=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.30,0.05),frameMat);
+    leg.position.set(p[0],0.15,p[1]); g.add(leg);
+  });
+  // Superficie transportadora (tabla + rodillos)
+  var conv=new THREE.Mesh(new THREE.BoxGeometry(0.50,0.04,0.66),
+    new THREE.MeshPhongMaterial({color:0x444444}));
+  conv.position.set(0,0.32,0); g.add(conv);
+  for(var ri=0;ri<5;ri++){
+    var roller=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,0.46,12),rollerMat);
+    roller.rotation.x=Math.PI/2; roller.position.set(0,0.36,-0.28+ri*0.14); g.add(roller);
+  }
+  // Arco porta-cinta – postes verticales
+  var postGeo=new THREE.BoxGeometry(0.05,0.62,0.05);
+  [-0.22,0.22].forEach(function(px){
+    var post=new THREE.Mesh(postGeo,frameMat);
+    post.position.set(px,0.64,0); g.add(post);
+  });
+  // Viga horizontal del arco
+  var beam=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.06,0.07),frameMat);
+  beam.position.set(0,0.98,0); g.add(beam);
+  // Cabezal de cinta superior
+  var headTop=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.08,0.12),bodyMat);
+  headTop.position.set(0,0.94,0); g.add(headTop);
+  // Rollo de cinta (amarillo)
+  var tapeRoll=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.065,16),tapeMat);
+  tapeRoll.rotation.z=Math.PI/2; tapeRoll.position.set(0.14,0.94,0.06); g.add(tapeRoll);
+  // Cabezal inferior (debajo de transportadora)
+  var headBot=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.06,0.10),bodyMat);
+  headBot.position.set(0,0.26,0); g.add(headBot);
+  // Panel de control lateral
+  var panel=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.22,0.26),
+    new THREE.MeshPhongMaterial({color:0x112244}));
+  panel.position.set(-0.315,0.50,0); g.add(panel);
+  [0x22CC22,0xFF2222,0xFFAA00].forEach(function(c,i){
+    var btn=new THREE.Mesh(new THREE.SphereGeometry(0.022,8,8),
+      new THREE.MeshPhongMaterial({color:c,emissive:c,emissiveIntensity:0.6}));
+    btn.position.set(-0.355,0.60-i*0.08,0); g.add(btn);
+  });
+  // Etiqueta
+  var sp=makeSprite('ENCINTADORA\nAUTOMÁTICA','#FFF','rgba(20,50,130,0.92)',220,50);
+  sp.position.set(0,1.28,0); sp.scale.set(3.0,0.70,1); g.add(sp);
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// Silla (comedor / oficina)
+function addChair(parent, x, z, rotY, color) {
+  var g=new THREE.Group();
+  var sMat=new THREE.MeshPhongMaterial({color:color||0x334455});
+  var lMat=new THREE.MeshPhongMaterial({color:0x777777});
+  // Asiento
+  var seat=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.04,0.40),sMat);
+  seat.position.set(0,0.46,0); g.add(seat);
+  // Respaldo
+  var back=new THREE.Mesh(new THREE.BoxGeometry(0.40,0.36,0.04),sMat);
+  back.position.set(0,0.66,0.18); g.add(back);
+  // 4 patas
+  [[-0.17,-0.17],[0.17,-0.17],[-0.17,0.17],[0.17,0.17]].forEach(function(p){
+    var l=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.44,0.035),lMat);
+    l.position.set(p[0],0.22,p[1]); g.add(l);
+  });
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// Mesa de comedor
+function addDiningTable(parent, x, z, w, d) {
+  var g=new THREE.Group();
+  var tMat=new THREE.MeshPhongMaterial({color:0xC09050});
+  var lMat=new THREE.MeshPhongMaterial({color:0x888878});
+  var top=new THREE.Mesh(new THREE.BoxGeometry(w,0.05,d),tMat);
+  top.position.set(0,0.76,0); top.castShadow=true; g.add(top);
+  var rim=new THREE.Mesh(new THREE.BoxGeometry(w+0.02,0.04,d+0.02),
+    new THREE.MeshPhongMaterial({color:0x907040}));
+  rim.position.set(0,0.735,0); g.add(rim);
+  [[-w/2+0.06,-d/2+0.06],[w/2-0.06,-d/2+0.06],
+   [-w/2+0.06, d/2-0.06],[w/2-0.06, d/2-0.06]].forEach(function(p){
+    var l=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.73,0.06),lMat);
+    l.position.set(p[0],0.365,p[1]); g.add(l);
+  });
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Escritorio de oficina con monitor y silla
+function addDesk(parent, x, z, rotY) {
+  var g=new THREE.Group();
+  var dMat=new THREE.MeshPhongMaterial({color:0xD0C8A0});
+  var pMat=new THREE.MeshPhongMaterial({color:0x999999});
+  // Tablero principal
+  var top=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.04,0.65),dMat);
+  top.position.set(0,0.75,0); top.castShadow=true; g.add(top);
+  // Extensión lateral (L-shape)
+  var ext=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.04,0.55),dMat);
+  ext.position.set(-0.7,0.75,0.6); g.add(ext);
+  // Paneles laterales
+  var lp=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.73,0.63),pMat);
+  lp.position.set(-0.68,0.365,0); g.add(lp);
+  var rp=lp.clone(); rp.position.set(0.68,0.365,0); g.add(rp);
+  // Cajón inferior
+  var drawer=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.18,0.6),
+    new THREE.MeshPhongMaterial({color:0xB8B090}));
+  drawer.position.set(0.35,0.37,0); g.add(drawer);
+  // Teclado
+  var kb=new THREE.Mesh(new THREE.BoxGeometry(0.40,0.02,0.18),
+    new THREE.MeshPhongMaterial({color:0x222222}));
+  kb.position.set(0.1,0.76,0.05); g.add(kb);
+  // Monitor (pantalla)
+  var mScr=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.28,0.03),
+    new THREE.MeshPhongMaterial({color:0x111122,emissive:0x002244,emissiveIntensity:0.5}));
+  mScr.position.set(0,1.05,0.06); g.add(mScr);
+  var mFrm=new THREE.Mesh(new THREE.BoxGeometry(0.50,0.32,0.03),
+    new THREE.MeshPhongMaterial({color:0x1a1a1a}));
+  mFrm.position.set(0,1.05,0.04); g.add(mFrm);
+  var mSt=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.18,0.04),
+    new THREE.MeshPhongMaterial({color:0x555555}));
+  mSt.position.set(0,0.84,0.07); g.add(mSt);
+  var mBs=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.02,0.12),
+    new THREE.MeshPhongMaterial({color:0x444444}));
+  mBs.position.set(0,0.77,0.11); g.add(mBs);
+  // Silla de oficina (frente al escritorio)
+  addChair(g, 0.1, -0.58, Math.PI, 0x224466);
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// Montacargas eléctrico (color negro como fotos reales Bodega 7)
+function addForklift(parent, x, z, rotY) {
+  var g=new THREE.Group();
+  var yMat=new THREE.MeshPhongMaterial({color:0x111122});  // negro/azul oscuro
+  var dMat=new THREE.MeshPhongMaterial({color:0x222233});
+  var gMat=new THREE.MeshPhongMaterial({color:0x777777});
+  var bMat=new THREE.MeshPhongMaterial({color:0x111111});
+  // Cuerpo principal
+  var body=new THREE.Mesh(new THREE.BoxGeometry(1.05,0.75,1.85),yMat);
+  body.position.set(0,0.55,0); body.castShadow=true; g.add(body);
+  // Capó motor
+  var hood=new THREE.Mesh(new THREE.BoxGeometry(0.88,0.18,0.82),dMat);
+  hood.position.set(0,0.975,-0.42); g.add(hood);
+  // Contrapeso trasero
+  var cw=new THREE.Mesh(new THREE.BoxGeometry(0.92,0.65,0.38),dMat);
+  cw.position.set(0,0.50,1.12); cw.castShadow=true; g.add(cw);
+  // Cabina (4 pilares)
+  [[-0.44,-0.22],[ 0.44,-0.22],[-0.44,0.64],[0.44,0.64]].forEach(function(p){
+    var pl=new THREE.Mesh(new THREE.BoxGeometry(0.055,0.88,0.055),
+      new THREE.MeshPhongMaterial({color:0xBB9900}));
+    pl.position.set(p[0],1.0,p[1]); g.add(pl);
+  });
+  // Techo de cabina
+  var roof=new THREE.Mesh(new THREE.BoxGeometry(0.88,0.05,0.90),dMat);
+  roof.position.set(0,1.43,0.21); g.add(roof);
+  // Asiento operador
+  var seat=new THREE.Mesh(new THREE.BoxGeometry(0.48,0.06,0.40),
+    new THREE.MeshPhongMaterial({color:0x1a1a1a}));
+  seat.position.set(0,1.03,0.24); g.add(seat);
+  // Volante
+  var sw=new THREE.Mesh(new THREE.TorusGeometry(0.13,0.022,8,24),
+    new THREE.MeshPhongMaterial({color:0x111111}));
+  sw.rotation.x=Math.PI/4; sw.position.set(0,1.17,-0.01); g.add(sw);
+  // Mástil (2 postes)
+  [-0.31,0.31].forEach(function(mx){
+    var mast=new THREE.Mesh(new THREE.BoxGeometry(0.07,2.2,0.09),gMat);
+    mast.position.set(mx,1.25,-1.06); mast.castShadow=true; g.add(mast);
+  });
+  // Viga del mástil
+  var mb=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.08,0.07),gMat);
+  mb.position.set(0,1.6,-1.06); g.add(mb);
+  // Portahorquillas
+  var ph=new THREE.Mesh(new THREE.BoxGeometry(0.70,0.18,0.06),
+    new THREE.MeshPhongMaterial({color:0x555555}));
+  ph.position.set(0,0.58,-1.12); g.add(ph);
+  // Horquillas (forks)
+  [-0.22,0.22].forEach(function(fx){
+    var fork=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.06,1.30),gMat);
+    fork.position.set(fx,0.20,-1.72); fork.castShadow=true; g.add(fork);
+    var tip=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.045,0.16),gMat);
+    tip.rotation.x=0.38; tip.position.set(fx,0.135,-2.33); g.add(tip);
+  });
+  // Ruedas (4 cilindros)
+  [[-0.52,-0.58],[-0.52,0.64],[0.52,-0.58],[0.52,0.64]].forEach(function(p){
+    var wh=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.18,20),bMat);
+    wh.rotation.z=Math.PI/2; wh.position.set(p[0],0.24,p[1]); wh.castShadow=true; g.add(wh);
+    var hub=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.20,12),
+      new THREE.MeshPhongMaterial({color:0x888888}));
+    hub.rotation.z=Math.PI/2; hub.position.set(p[0],0.24,p[1]); g.add(hub);
+  });
+  // Luz giratoria (torreta ámbar)
+  var wl=new THREE.Mesh(new THREE.SphereGeometry(0.08,10,10),
+    new THREE.MeshPhongMaterial({color:0xFF8800,emissive:0xFF5500,emissiveIntensity:0.75}));
+  wl.position.set(0,1.50,0.84); g.add(wl);
+  var wlBase=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,0.08,12),
+    new THREE.MeshPhongMaterial({color:0x333333}));
+  wlBase.position.set(0,1.43,0.84); g.add(wlBase);
+  // Etiqueta
+  var sp=makeSprite('MONTACARGAS','#FFF','rgba(80,55,0,0.90)',190,38);
+  sp.position.set(0,2.65,-0.5); sp.scale.set(3.0,0.65,1); g.add(sp);
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// Tarima con cajas (pallet stack)
+function addPallet(parent, x, z, boxLevels, color) {
+  var g=new THREE.Group();
+  // Pallet de madera
+  var pMat=new THREE.MeshPhongMaterial({color:0xA07838});
+  var pal=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.12,1.0),pMat);
+  pal.position.set(0,0.06,0); pal.castShadow=true; g.add(pal);
+  for(var s=0;s<3;s++){
+    var sl=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.04,0.1),
+      new THREE.MeshPhongMaterial({color:0xB88840}));
+    sl.position.set(0,0.08,-0.38+s*0.38); g.add(sl);
+  }
+  // Cajas apiladas
+  var bh=0.32;
+  var bMat2=new THREE.MeshPhongMaterial({color:color||0x4472C4});
+  for(var j=0;j<boxLevels;j++){
+    var bx=new THREE.Mesh(new THREE.BoxGeometry(1.1,bh,0.88),bMat2);
+    bx.position.set(0,0.12+bh/2+j*bh,0); bx.castShadow=true; g.add(bx);
+  }
+  // Film stretch (envoltura transparente)
+  var wrap=new THREE.Mesh(new THREE.BoxGeometry(1.14,bh*boxLevels+0.08,0.92),
+    new THREE.MeshPhongMaterial({color:0xCCDDEE,transparent:true,opacity:0.15}));
+  wrap.position.set(0,0.12+bh*boxLevels/2,0); g.add(wrap);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Línea de demarcación de suelo
+function addFloorLine(parent, x1,z1,x2,z2, width, color) {
+  var dx=x2-x1, dz=z2-z1, len=Math.sqrt(dx*dx+dz*dz);
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(width,len),
+    new THREE.MeshBasicMaterial({color:color||0xFFCC00}));
+  m.rotation.x=-Math.PI/2;
+  m.rotation.z=-Math.atan2(dx,dz);
+  m.position.set((x1+x2)/2,0.03,(z1+z2)/2);
+  parent.add(m);
+}
+
+// Puerta de acceso
+function addDoor(parent, x, z, axis, w, h) {
+  // axis='z': puerta en pared X (pared izq/der), vano corre a lo largo de Z
+  // axis='x': puerta en pared Z (pared front/back), vano corre a lo largo de X
+  var g=new THREE.Group();
+  var fMat=new THREE.MeshPhongMaterial({color:0x8B6914});   // marco madera
+  var dMat=new THREE.MeshPhongMaterial({color:0x5B8DB8,transparent:true,opacity:0.72}); // panel vidrio/metal
+  var mMat=new THREE.MeshPhongMaterial({color:0xBBBBBB});   // metal
+  var fw=0.09;
+  // Jambas (postes)
+  var jGeo = new THREE.BoxGeometry(fw, h+fw, fw);
+  var j1=new THREE.Mesh(jGeo,fMat), j2=new THREE.Mesh(jGeo,fMat);
+  if(axis==='z'){ j1.position.set(0,h/2,-w/2); j2.position.set(0,h/2,w/2); }
+  else           { j1.position.set(-w/2,h/2,0); j2.position.set(w/2,h/2,0); }
+  g.add(j1); g.add(j2);
+  // Dintel (viga superior)
+  var dGeo = axis==='z' ? new THREE.BoxGeometry(fw,fw,w) : new THREE.BoxGeometry(w,fw,fw);
+  var dintel=new THREE.Mesh(dGeo,fMat);
+  dintel.position.set(0,h+fw/2,0); g.add(dintel);
+  // Panel de puerta
+  var pGeo = axis==='z' ? new THREE.BoxGeometry(0.05,h*0.97,w-fw*2) : new THREE.BoxGeometry(w-fw*2,h*0.97,0.05);
+  var panel=new THREE.Mesh(pGeo,dMat);
+  panel.position.set(0,h*0.5,0); panel.castShadow=true; g.add(panel);
+  // Manija
+  var handle=new THREE.Mesh(new THREE.SphereGeometry(0.04,8,8),mMat);
+  if(axis==='z') handle.position.set(-0.05,h*0.5,w*0.3);
+  else           handle.position.set(w*0.3,h*0.5,-0.05);
+  g.add(handle);
+  // Umbral
+  var uGeo = axis==='z' ? new THREE.BoxGeometry(0.08,0.05,w) : new THREE.BoxGeometry(w,0.05,0.08);
+  var umbral=new THREE.Mesh(uGeo,new THREE.MeshPhongMaterial({color:0xCCCC88}));
+  umbral.position.set(0,0.025,0); g.add(umbral);
+  // Etiqueta
+  var sp=makeSprite('PUERTA','#FFF','rgba(70,50,10,0.90)',150,32);
+  sp.position.set(0,h+0.46,0); sp.scale.set(2.2,0.56,1); g.add(sp);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Cortina industrial enrollable (roll-up door)
+function addRollingCurtain(parent, x, z, axis, w, h) {
+  // axis='z': cortina en pared X, lamas corren a lo largo de Z
+  // axis='x': cortina en pared Z, lamas corren a lo largo de X
+  var g=new THREE.Group();
+  // Caja del rodillo (parte alta)
+  var hGeo = axis==='z' ? new THREE.BoxGeometry(0.26,0.36,w+0.22) : new THREE.BoxGeometry(w+0.22,0.36,0.26);
+  var housing=new THREE.Mesh(hGeo,new THREE.MeshPhongMaterial({color:0x333344}));
+  housing.position.set(0,h+0.18,0); housing.castShadow=true; g.add(housing);
+  // Guías laterales
+  var gMat=new THREE.MeshPhongMaterial({color:0x555566});
+  var geoG = axis==='z' ? new THREE.BoxGeometry(0.07,h,0.07) : new THREE.BoxGeometry(0.07,h,0.07);
+  [-1,1].forEach(function(s){
+    var guide=new THREE.Mesh(geoG,gMat);
+    if(axis==='z') guide.position.set(0,h/2,s*(w/2+0.05));
+    else           guide.position.set(s*(w/2+0.05),h/2,0);
+    g.add(guide);
+  });
+  // Lamas (slats) de la cortina
+  var nS=Math.max(5,Math.floor(h/0.36));
+  var sH=h/nS;
+  for(var i=0;i<nS;i++){
+    var sGeo = axis==='z' ? new THREE.BoxGeometry(0.06,sH-0.025,w-0.08) : new THREE.BoxGeometry(w-0.08,sH-0.025,0.06);
+    var slat=new THREE.Mesh(sGeo,
+      new THREE.MeshPhongMaterial({color:i%2===0?0x8899AA:0x99AABB,transparent:true,opacity:0.88}));
+    slat.position.set(0,sH/2+i*sH,0); g.add(slat);
+  }
+  // Barra de jale (manija inferior)
+  var bGeo = axis==='z' ? new THREE.BoxGeometry(0.05,0.06,w*0.55) : new THREE.BoxGeometry(w*0.55,0.06,0.05);
+  var bar=new THREE.Mesh(bGeo,new THREE.MeshPhongMaterial({color:0xAAAAAA}));
+  bar.position.set(0,h*0.04,0); g.add(bar);
+  // Motor lateral
+  var motor=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.18,0.18),
+    new THREE.MeshPhongMaterial({color:0x222233}));
+  motor.position.set(0,h+0.06,axis==='z'?-(w/2+0.16):0); g.add(motor);
+  // Etiqueta
+  var sp=makeSprite('CORTINA\nINDUSTRIAL','#FFF','rgba(20,20,50,0.92)',200,50);
+  sp.position.set(0,h+0.85,0); sp.scale.set(3.0,0.72,1); g.add(sp);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Módulo prefabricado (oficina/cuarto tipo contenedor blanco)
+// x,z = esquina inferior izquierda; puerta en cara -z (frente)
+function addModularRoom(parent, x, z, w, d, h, label) {
+  h=h||2.8;
+  var g=new THREE.Group();
+  var extMat=new THREE.MeshPhongMaterial({color:0xEEEEEE});
+  var frMat=new THREE.MeshPhongMaterial({color:0x666666});
+  var glassMat=new THREE.MeshPhongMaterial({color:0x88AACC,transparent:true,opacity:0.42,side:THREE.DoubleSide});
+  var dkMat=new THREE.MeshPhongMaterial({color:0x111111});
+
+  // Paredes (cajas delgadas)
+  var fw=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.08),extMat); // frente
+  fw.position.set(0,h/2,-d/2); fw.castShadow=true; g.add(fw);
+  var bw=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.08),extMat); // fondo
+  bw.position.set(0,h/2,d/2); bw.castShadow=true; g.add(bw);
+  var lw=new THREE.Mesh(new THREE.BoxGeometry(0.08,h,d),extMat); // izq
+  lw.position.set(-w/2,h/2,0); lw.castShadow=true; g.add(lw);
+  var rw=lw.clone(); rw.position.set(w/2,h/2,0); g.add(rw); // der
+  // Techo
+  var roof=new THREE.Mesh(new THREE.BoxGeometry(w+0.14,0.09,d+0.14),
+    new THREE.MeshPhongMaterial({color:0xDDDDDD}));
+  roof.position.set(0,h,0); roof.castShadow=true; g.add(roof);
+  // Columnas en esquinas
+  var cGeo=new THREE.BoxGeometry(0.10,h,0.10);
+  [[-w/2,-d/2],[w/2,-d/2],[-w/2,d/2],[w/2,d/2]].forEach(function(p){
+    var col=new THREE.Mesh(cGeo,frMat); col.position.set(p[0],h/2,p[1]); g.add(col);
+  });
+  // Puerta (cara frontal, lado izquierdo)
+  var dW=0.95,dH=2.1;
+  var door=new THREE.Mesh(new THREE.BoxGeometry(dW,dH,0.06),dkMat);
+  door.position.set(-w/2+dW/2+0.12,dH/2,-d/2-0.04); g.add(door);
+  var dFr=new THREE.Mesh(new THREE.BoxGeometry(dW+0.1,0.08,0.1),frMat);
+  dFr.position.set(-w/2+dW/2+0.12,dH+0.04,-d/2); g.add(dFr);
+  // Manija
+  var dhnd=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.12,8),
+    new THREE.MeshPhongMaterial({color:0xCCCCCC}));
+  dhnd.rotation.z=Math.PI/2; dhnd.position.set(-w/2+dW+0.06,dH*0.5,-d/2-0.1); g.add(dhnd);
+  // Ventanas en frente
+  var nW=Math.max(1,Math.floor((w-1.4)/1.0));
+  for(var i=0;i<nW;i++){
+    var wx=-w/2+1.3+i*1.0;
+    if(wx<w/2-0.5){
+      var wfr=new THREE.Mesh(new THREE.BoxGeometry(0.76,0.56,0.07),frMat);
+      wfr.position.set(wx,h*0.62,-d/2-0.04); g.add(wfr);
+      var win=new THREE.Mesh(new THREE.BoxGeometry(0.70,0.50,0.05),glassMat);
+      win.position.set(wx,h*0.62,-d/2-0.04); g.add(win);
+    }
+  }
+  // Ventanas en cara derecha (lateral visible)
+  for(var j=0;j<2;j++){
+    var wsr=new THREE.Mesh(new THREE.BoxGeometry(0.07,0.48,0.68),glassMat);
+    wsr.position.set(w/2+0.04,h*0.62,-d/4+j*d/2); g.add(wsr);
+  }
+  // Señales junto a la puerta (rojo=emergencia, verde=salida)
+  var rs=new THREE.Mesh(new THREE.BoxGeometry(0.23,0.30,0.04),
+    new THREE.MeshPhongMaterial({color:0xCC1111,emissive:0x440000,emissiveIntensity:0.3}));
+  rs.position.set(-w/2+dW+0.30,h*0.56,-d/2-0.05); g.add(rs);
+  var gs=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.18,0.04),
+    new THREE.MeshPhongMaterial({color:0x116611,emissive:0x002200,emissiveIntensity:0.3}));
+  gs.position.set(-w/2+dW+0.58,h*0.66,-d/2-0.05); g.add(gs);
+  var bs=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.22,0.04),
+    new THREE.MeshPhongMaterial({color:0x1144CC,emissive:0x000033,emissiveIntensity:0.2}));
+  bs.position.set(-w/2+dW+0.84,h*0.60,-d/2-0.05); g.add(bs);
+  // Mini-split AC
+  var ac=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.22,0.14),
+    new THREE.MeshPhongMaterial({color:0xFFFFFF}));
+  ac.position.set(w/4,h-0.18,-d/2-0.07); g.add(ac);
+  // Etiqueta
+  if(label){
+    var sp=makeSprite(label,'#FFF','rgba(35,55,90,0.92)',260,52);
+    sp.position.set(0,h+0.6,0); sp.scale.set(3.8,0.76,1); g.add(sp);
+  }
+  g.position.set(x+w/2,0,z+d/2); parent.add(g);
+}
+
+// Camión plataforma (flatbed pickup truck)
+function addFlatbedTruck(parent, x, z, rotY) {
+  var g=new THREE.Group();
+  var cabMat=new THREE.MeshPhongMaterial({color:0xFFFFFF});
+  var bedMat=new THREE.MeshPhongMaterial({color:0x777777});
+  var tireMat=new THREE.MeshPhongMaterial({color:0x111111});
+  var rimMat=new THREE.MeshPhongMaterial({color:0xBBBBBB});
+  // Cabina
+  var cab=new THREE.Mesh(new THREE.BoxGeometry(1.9,1.55,1.75),cabMat);
+  cab.position.set(-3.2,1.1,0); cab.castShadow=true; g.add(cab);
+  // Parabrisas
+  var ws=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.72,1.25),
+    new THREE.MeshPhongMaterial({color:0x88AACC,transparent:true,opacity:0.45}));
+  ws.position.set(-2.25,1.48,0); g.add(ws);
+  // Faros
+  [-0.65,0.65].forEach(function(fz){
+    var faro=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.22,0.28),
+      new THREE.MeshPhongMaterial({color:0xFFFF88,emissive:0xFFDD00,emissiveIntensity:0.4}));
+    faro.position.set(-4.12,0.95,fz); g.add(faro);
+  });
+  // Plataforma (cama plana)
+  var bed=new THREE.Mesh(new THREE.BoxGeometry(5.0,0.16,1.88),bedMat);
+  bed.position.set(1.3,0.74,0); bed.castShadow=true; g.add(bed);
+  // Barandas de la plataforma
+  [[-0.95,0],[0.95,0]].forEach(function(bz){
+    var rail=new THREE.Mesh(new THREE.BoxGeometry(5.0,0.14,0.06),
+      new THREE.MeshPhongMaterial({color:0x555555}));
+    rail.position.set(1.3,0.88,bz[0]); g.add(rail);
+  });
+  // Chasis (parte baja)
+  var chassis=new THREE.Mesh(new THREE.BoxGeometry(7.5,0.18,1.4),
+    new THREE.MeshPhongMaterial({color:0x333333}));
+  chassis.position.set(-0.5,0.38,0); g.add(chassis);
+  // Ruedas: 2 delanteras + 4 traseras (duales)
+  var wGeo=new THREE.CylinderGeometry(0.40,0.40,0.22,20);
+  [[-2.9,-0.94],[-2.9,0.94],[1.8,-0.94],[1.8,0.94],[2.9,-0.94],[2.9,0.94]].forEach(function(p){
+    var tire=new THREE.Mesh(wGeo,tireMat);
+    tire.rotation.z=Math.PI/2; tire.position.set(p[0],0.40,p[1]); tire.castShadow=true; g.add(tire);
+    var rim=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.24,12),rimMat);
+    rim.rotation.z=Math.PI/2; rim.position.set(p[0],0.40,p[1]); g.add(rim);
+  });
+  // Etiqueta
+  var sp=makeSprite('CAMIÓN PLATAFORMA','#FFF','rgba(30,30,30,0.85)',210,36);
+  sp.position.set(-1,1.8,0); sp.scale.set(3.2,0.62,1); g.add(sp);
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// Extintor de incendios
+function addFireExtinguisher(parent, x, z) {
+  var g=new THREE.Group();
+  var rMat=new THREE.MeshPhongMaterial({color:0xCC1111});
+  var body=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.55,12),rMat);
+  body.position.set(0,0.35,0); g.add(body);
+  var top2=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.07,0.1,12),rMat);
+  top2.position.set(0,0.65,0); g.add(top2);
+  var valve=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.1,8),
+    new THREE.MeshPhongMaterial({color:0x333333}));
+  valve.position.set(0,0.72,0); g.add(valve);
+  var handle=new THREE.Mesh(new THREE.TorusGeometry(0.055,0.014,6,12),
+    new THREE.MeshPhongMaterial({color:0x222222}));
+  handle.rotation.x=Math.PI/2; handle.position.set(0,0.74,0); g.add(handle);
+  var nozzle=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.015,0.18,8),
+    new THREE.MeshPhongMaterial({color:0x111111}));
+  nozzle.rotation.z=Math.PI/2.5; nozzle.position.set(0.07,0.76,0); g.add(nozzle);
+  // Soporte en pared
+  var bracket=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.52,0.06),
+    new THREE.MeshPhongMaterial({color:0x444444}));
+  bracket.position.set(-0.11,0.38,0); g.add(bracket);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Cono de seguridad
+// ── RAMPA DE DESCARGA (cuña/pendiente real) ───────────────────────────────
+function addRampa(parent, x, z, rotY) {
+  var g = new THREE.Group();
+  var concMat = new THREE.MeshPhongMaterial({color:0x999999, side:THREE.DoubleSide});
+  var stripMat= new THREE.MeshPhongMaterial({color:0xFFCC00});
+  var railMat = new THREE.MeshPhongMaterial({color:0x777777});
+
+  // Cuña: prisma triangular (pendiente real)
+  // Vértices: base baja al frente (z=+1.5, y=0) → base alta atrás (z=-1.5, y=1.1)
+  var W2 = 1.3; // semiancho
+  var verts = new Float32Array([
+    // cara frontal (triangulo bajo)
+    -W2, 0,    1.5,   W2, 0,    1.5,   W2, 0.04, 1.5,
+    -W2, 0,    1.5,   W2, 0.04, 1.5,  -W2, 0.04, 1.5,
+    // cara trasera (triangulo alto)
+    -W2, 1.1, -1.5,   W2, 1.1, -1.5,   W2, 0,   -1.5,
+    -W2, 1.1, -1.5,   W2, 0,   -1.5,  -W2, 0,   -1.5,
+    // superficie inclinada (top)
+    -W2, 0, 1.5,  -W2, 1.1, -1.5,  W2, 1.1, -1.5,
+    -W2, 0, 1.5,   W2, 1.1, -1.5,  W2,  0,   1.5,
+    // base inferior
+    -W2, 0, 1.5,  W2, 0, 1.5,  W2, 0, -1.5,
+    -W2, 0, 1.5,  W2, 0, -1.5, -W2, 0, -1.5,
+    // lateral izquierdo
+    -W2, 0, 1.5,  -W2, 0, -1.5,  -W2, 1.1, -1.5,
+    // lateral derecho
+     W2, 0, 1.5,   W2, 1.1, -1.5,  W2, 0, -1.5
+  ]);
+  var rampGeo = new THREE.BufferGeometry();
+  rampGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+  rampGeo.computeVertexNormals();
+  var rampMesh = new THREE.Mesh(rampGeo, concMat);
+  g.add(rampMesh);
+
+  // Plataforma nivelada en la parte alta
+  var platform = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 1.0), concMat);
+  platform.position.set(0, 1.08, -2.0); g.add(platform);
+
+  // Franjas amarillas sobre la pendiente
+  for(var i=0;i<4;i++){
+    var t = i/3;
+    var fz = 1.5 - t*3.0;
+    var fy = t*1.1 + 0.02;
+    var stripe = new THREE.Mesh(new THREE.BoxGeometry(2.62, 0.04, 0.10), stripMat);
+    stripe.position.set(0, fy, fz); g.add(stripe);
+  }
+
+  // Barandales laterales
+  [-W2-0.04, W2+0.04].forEach(function(ox){
+    // poste diagonal aproximado
+    var rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 3.1), railMat);
+    rail.rotation.x = Math.atan2(1.1, 3.0);
+    rail.position.set(ox, 0.6, -0.05); g.add(rail);
+    // poste horizontal alto
+    var top = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 1.0), railMat);
+    top.position.set(ox, 1.5, -2.0); g.add(top);
+    // postes verticales cada 1.5m
+    [-1.5, 0, 1.5].forEach(function(pz){
+      var ph = pz <= 0 ? (1.5 - pz*1.1/3.0)*0.5 + 0.5 : 0.5;
+      var pp = new THREE.Mesh(new THREE.BoxGeometry(0.06, ph, 0.06), railMat);
+      pp.position.set(ox, ph/2, pz); g.add(pp);
+    });
+  });
+
+  var sp = makeSprite('RAMPA\nDESCARGA','#fff','rgba(60,60,60,0.88)',150,46);
+  sp.position.set(0, 2.2, -1.0); sp.scale.set(2.0, 0.60, 1); g.add(sp);
+
+  g.rotation.y = rotY || 0;
+  g.position.set(x, 0, z);
+  parent.add(g);
+}
+
+// ── PUERTA DE ACCESO ─────────────────────────────────────────────────────
+function addPuerta(parent, x, z, rotY) {
+  var g = new THREE.Group();
+  var frameMat = new THREE.MeshPhongMaterial({color:0x555555});
+  var doorMat  = new THREE.MeshPhongMaterial({color:0x8B6914, shininess:40});
+  var glassMat = new THREE.MeshPhongMaterial({color:0x88CCFF, transparent:true, opacity:0.45});
+  // Marco
+  var topBar  = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.10, 0.08), frameMat);
+  topBar.position.set(0, 2.25, 0); g.add(topBar);
+  var leftBar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.2, 0.08), frameMat);
+  leftBar.position.set(-0.56, 1.1, 0); g.add(leftBar);
+  var rightBar= new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.2, 0.08), frameMat);
+  rightBar.position.set( 0.56, 1.1, 0); g.add(rightBar);
+  // Hoja de la puerta
+  var leaf = new THREE.Mesh(new THREE.BoxGeometry(1.0, 2.1, 0.06), doorMat);
+  leaf.position.set(0, 1.05, 0); g.add(leaf);
+  // Ventana superior
+  var win = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.07), glassMat);
+  win.position.set(0, 1.8, 0); g.add(win);
+  // Manija
+  var handle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.06), frameMat);
+  handle.position.set(0.36, 1.05, 0.06); g.add(handle);
+  // Escalón
+  var step = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.06, 0.3), frameMat);
+  step.position.set(0, 0.03, 0.18); g.add(step);
+  g.rotation.y = rotY || 0;
+  g.position.set(x, 0, z);
+  parent.add(g);
+}
+
+// ── AUTOMÓVIL ────────────────────────────────────────────────────────────
+function addCar(parent, x, z, color, rotY) {
+  var g = new THREE.Group();
+  var bodyMat  = new THREE.MeshPhongMaterial({color: color, shininess:80});
+  var glassMat = new THREE.MeshPhongMaterial({color:0x88CCFF, transparent:true, opacity:0.5});
+  var blackMat = new THREE.MeshPhongMaterial({color:0x111111});
+  var chromeMat= new THREE.MeshPhongMaterial({color:0xCCCCCC, shininess:120});
+  // Carrocería baja
+  var body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 0.9), bodyMat);
+  body.position.set(0, 0.42, 0); g.add(body);
+  // Cabina
+  var cabin = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.45, 0.82), bodyMat);
+  cabin.position.set(-0.1, 0.92, 0); g.add(cabin);
+  // Parabrisas delantero
+  var wf = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.38, 0.78), glassMat);
+  wf.position.set(0.40, 0.90, 0); g.add(wf);
+  // Parabrisas trasero
+  var wr = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.38, 0.78), glassMat);
+  wr.position.set(-0.60, 0.90, 0); g.add(wr);
+  // Ventanas laterales
+  [-0.41, 0.41].forEach(function(oz){
+    var ws = new THREE.Mesh(new THREE.BoxGeometry(0.90, 0.32, 0.04), glassMat);
+    ws.position.set(-0.1, 0.95, oz); g.add(ws);
+  });
+  // Ruedas (4)
+  [[ 0.60,-0.46],[ 0.60, 0.46],[-0.60,-0.46],[-0.60, 0.46]].forEach(function(p){
+    var tire = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.18,16), blackMat);
+    tire.rotation.z = Math.PI/2; tire.position.set(p[0], 0.22, p[1]); g.add(tire);
+    var rim = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,0.20,10), chromeMat);
+    rim.rotation.z = Math.PI/2; rim.position.set(p[0], 0.22, p[1]); g.add(rim);
+  });
+  // Faros delanteros
+  var hMat = new THREE.MeshPhongMaterial({color:0xFFFFCC, emissive:0xFFFF88});
+  [-0.30,0.30].forEach(function(oz){
+    var h = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.10,0.16), hMat);
+    h.position.set(0.90, 0.42, oz); g.add(h);
+  });
+  // Capo
+  var hood = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.08, 0.88), bodyMat);
+  hood.position.set(0.54, 0.70, 0); g.add(hood);
+  g.rotation.y = rotY || 0;
+  g.position.set(x, 0, z);
+  parent.add(g);
+}
+
+// ── TRAILER (semirremolque de carga) ─────────────────────────────────────
+function addTrailer(parent, x, z) {
+  var g = new THREE.Group();
+  // Caja del remolque
+  var bodyMat = new THREE.MeshPhongMaterial({color:0xCCCCCC, side:THREE.DoubleSide});
+  var body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.2, 9.0), bodyMat);
+  body.position.set(0, 1.6, 0);
+  g.add(body);
+  // Franja lateral naranja
+  var stripMat = new THREE.MeshPhongMaterial({color:0xFF6600});
+  var strip = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.25, 9.02), stripMat);
+  strip.position.set(0, 2.8, 0);
+  g.add(strip);
+  // Ruedas (4 ejes simplificados)
+  var wheelMat = new THREE.MeshPhongMaterial({color:0x222222});
+  [[-2.5,0.35],[-3.5,0.35],[2.5,0.35],[3.5,0.35]].forEach(function(zx){
+    [-1.1,1.1].forEach(function(ox){
+      var w = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.22,12), wheelMat);
+      w.rotation.z = Math.PI/2;
+      w.position.set(ox, 0.35, zx[0]);
+      g.add(w);
+    });
+  });
+  // Puerta trasera (frente al dock)
+  var doorMat = new THREE.MeshPhongMaterial({color:0xAAAAAA});
+  var door = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3.2, 0.08), doorMat);
+  door.position.set(0, 1.6, -4.5);
+  g.add(door);
+  // Etiqueta
+  var sp = makeSprite('TRAILER','#fff','rgba(50,50,50,0.85)',140,32);
+  sp.position.set(0, 3.8, 0); sp.scale.set(2.0, 0.48, 1);
+  g.add(sp);
+  g.position.set(x, 0, z);
+  parent.add(g);
+}
+
+// ── CORTINA INDUSTRIAL (dock de carga/descarga) ───────────────────────────
+function addCortina(parent, x, z) {
+  var g = new THREE.Group();
+  // Marco metálico superior
+  var headerMat = new THREE.MeshPhongMaterial({color:0x888888});
+  var header = new THREE.Mesh(new THREE.BoxGeometry(2.8,0.15,0.12), headerMat);
+  header.position.set(0, 3.8, 0);
+  g.add(header);
+  // Tiras de PVC (alternando amarillo y transparente)
+  var colors = [0xFFDD00, 0xFFEE55, 0xFFDD00, 0xFFEE55, 0xFFDD00, 0xFFEE55, 0xFFDD00];
+  for (var i = 0; i < 7; i++) {
+    var stripMat = new THREE.MeshPhongMaterial({color:colors[i], transparent:true, opacity:0.75, side:THREE.DoubleSide});
+    var strip = new THREE.Mesh(new THREE.BoxGeometry(0.36, 3.6, 0.04), stripMat);
+    strip.position.set(-1.26 + i*0.42, 2.0, 0);
+    g.add(strip);
+  }
+  // Guías laterales
+  var guideMat = new THREE.MeshPhongMaterial({color:0x555555});
+  [-1.4, 1.4].forEach(function(ox){
+    var guide = new THREE.Mesh(new THREE.BoxGeometry(0.08, 3.8, 0.08), guideMat);
+    guide.position.set(ox, 1.9, 0);
+    g.add(guide);
+  });
+  // Etiqueta
+  var sp = makeSprite('CORTINA\nINDUSTRIAL','#333','rgba(255,220,0,0.88)',160,46);
+  sp.position.set(0, 4.6, 0); sp.scale.set(2.2, 0.64, 1);
+  g.add(sp);
+  g.position.set(x, 0, z);
+  parent.add(g);
+}
+
+function addSafetyCone(parent, x, z) {
+  var g=new THREE.Group();
+  var cMat=new THREE.MeshPhongMaterial({color:0xFF6600});
+  var base=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.20,0.05,12),
+    new THREE.MeshPhongMaterial({color:0x222222}));
+  base.position.set(0,0.025,0); g.add(base);
+  var cone=new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.16,0.50,12),cMat);
+  cone.position.set(0,0.30,0); cone.castShadow=true; g.add(cone);
+  // Franja reflectante blanca
+  var band=new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.12,0.06,12),
+    new THREE.MeshPhongMaterial({color:0xFFFFFF}));
+  band.position.set(0,0.17,0); g.add(band);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// ── BOLLARD DE SEGURIDAD (poste metálico amarillo) ───────────────────────────
+function addBollard(parent, x, z) {
+  var g=new THREE.Group();
+  var base=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.17,0.06,12),
+    new THREE.MeshPhongMaterial({color:0x222222}));
+  base.position.set(0,0.03,0); g.add(base);
+  var post=new THREE.Mesh(new THREE.CylinderGeometry(0.072,0.082,1.0,12),
+    new THREE.MeshPhongMaterial({color:0xFFCC00}));
+  post.position.set(0,0.56,0); post.castShadow=true; g.add(post);
+  var stripe=new THREE.Mesh(new THREE.CylinderGeometry(0.078,0.078,0.09,12),
+    new THREE.MeshPhongMaterial({color:0x111111}));
+  stripe.position.set(0,0.72,0); g.add(stripe);
+  var cap=new THREE.Mesh(new THREE.SphereGeometry(0.075,12,6),
+    new THREE.MeshPhongMaterial({color:0xFFCC00}));
+  cap.position.set(0,1.07,0); g.add(cap);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// ── SEÑAL DE SALIDA / EMERGENCIA (poste + letrero verde) ─────────────────────
+function addExitSign(parent, x, z, rotY) {
+  var g=new THREE.Group();
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,2.5,8),
+    new THREE.MeshPhongMaterial({color:0x666666}));
+  pole.position.set(0,1.25,0); g.add(pole);
+  var panel=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.24,0.05),
+    new THREE.MeshPhongMaterial({color:0x00AA44,emissive:0x005522,emissiveIntensity:0.7}));
+  panel.position.set(0,2.42,0); g.add(panel);
+  var sp=makeSprite(' SALIDA\nEMERGENCIA','#FFF','rgba(0,150,60,0.0)',230,58);
+  sp.position.set(0,2.42,0.04); sp.scale.set(2.5,0.68,1); g.add(sp);
+  // Flecha verde en piso
+  var arr=new THREE.Mesh(new THREE.BoxGeometry(0.20,0.008,0.60),
+    new THREE.MeshPhongMaterial({color:0x00CC44}));
+  arr.position.set(0,0.009,0.55); g.add(arr);
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// ── SEÑAL EPP OBLIGATORIO ─────────────────────────────────────────────────────
+function addEPPSign(parent, x, z, rotY) {
+  var g=new THREE.Group();
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,2.3,8),
+    new THREE.MeshPhongMaterial({color:0x666666}));
+  pole.position.set(0,1.15,0); g.add(pole);
+  var panel=new THREE.Mesh(new THREE.BoxGeometry(0.74,0.64,0.05),
+    new THREE.MeshPhongMaterial({color:0x0044AA,emissive:0x001166,emissiveIntensity:0.4}));
+  panel.position.set(0,2.28,0); g.add(panel);
+  var sp=makeSprite(' USO OBLIGATORIO\n CHALECO · CASCO\n GUANTES','#FFF','rgba(0,0,0,0)',250,92);
+  sp.position.set(0,2.28,0.04); sp.scale.set(3.1,1.18,1); g.add(sp);
+  g.rotation.y=rotY||0; g.position.set(x,0,z); parent.add(g);
+}
+
+// ── ESTACIÓN DE PRIMEROS AUXILIOS ────────────────────────────────────────────
+function addFirstAid(parent, x, z) {
+  var g=new THREE.Group();
+  var sop=new THREE.Mesh(new THREE.BoxGeometry(0.08,1.0,0.08),
+    new THREE.MeshPhongMaterial({color:0x555555}));
+  sop.position.set(0,0.5,0); g.add(sop);
+  var cab=new THREE.Mesh(new THREE.BoxGeometry(0.52,0.62,0.22),
+    new THREE.MeshPhongMaterial({color:0x006622}));
+  cab.position.set(0,1.25,0); cab.castShadow=true; g.add(cab);
+  // Cruz blanca
+  var cv=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.42,0.03),
+    new THREE.MeshPhongMaterial({color:0xFFFFFF,emissive:0xBBFFBB,emissiveIntensity:0.4}));
+  cv.position.set(0,1.25,0.13); g.add(cv);
+  var ch=new THREE.Mesh(new THREE.BoxGeometry(0.36,0.09,0.03),
+    new THREE.MeshPhongMaterial({color:0xFFFFFF,emissive:0xBBFFBB,emissiveIntensity:0.4}));
+  ch.position.set(0,1.25,0.13); g.add(ch);
+  var sp=makeSprite(' PRIMEROS\nAUXILIOS','#FFF','rgba(0,90,30,0.92)',210,54);
+  sp.position.set(0,2.15,0); sp.scale.set(2.4,0.72,1); g.add(sp);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// ── POSTE DE ADVERTENCIA EN COLUMNA (franjas amarillo/negro) ─────────────────
+function addHazardPost(parent, x, z) {
+  var g=new THREE.Group();
+  var stripeH=0.16, cols=[0xFFCC00,0x111111];
+  for(var hi=0;hi<9;hi++){
+    var s=new THREE.Mesh(new THREE.BoxGeometry(0.28,stripeH,0.28),
+      new THREE.MeshPhongMaterial({color:cols[hi%2]}));
+    s.position.set(0,stripeH/2+hi*stripeH,0); g.add(s);
+  }
+  var capP=new THREE.Mesh(new THREE.BoxGeometry(0.30,0.06,0.30),
+    new THREE.MeshPhongMaterial({color:0xFFCC00}));
+  capP.position.set(0,stripeH*9+0.03,0); g.add(capP);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// Dock de carga (plataforma elevada + bumpers + nivelador)
+function addLoadingDock(parent, x, z, w, d) {
+  var g=new THREE.Group();
+  // Plataforma
+  var plat=new THREE.Mesh(new THREE.BoxGeometry(w,0.20,d),
+    new THREE.MeshPhongMaterial({color:0x6677AA}));
+  plat.position.set(0,0.10,0); plat.castShadow=true; plat.receiveShadow=true; g.add(plat);
+  // Franjas de seguridad amarillas/negras
+  for(var i=0;i<4;i++){
+    var stripe=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.005,d),
+      new THREE.MeshPhongMaterial({color:i%2===0?0xFFCC00:0x111111}));
+    stripe.position.set(-w/2+0.22+i*0.3,0.205,0); g.add(stripe);
+  }
+  // Topes de goma (bumpers)
+  [-d/2+0.45, d/2-0.45].forEach(function(pz){
+    var bump=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.30,0.16),
+      new THREE.MeshPhongMaterial({color:0x222222}));
+    bump.position.set(0,0.20+0.15,pz); g.add(bump);
+  });
+  // Nivelador de muelle (dock leveler)
+  var lvl=new THREE.Mesh(new THREE.BoxGeometry(w-0.26,0.06,d-0.22),
+    new THREE.MeshPhongMaterial({color:0x555566}));
+  lvl.position.set(0,0.20,0); g.add(lvl);
+  // Señal
+  var sp=makeSprite('DOCK\nDE CARGA','#FFF','rgba(30,50,100,0.88)',160,44);
+  sp.position.set(0,0.8,0); sp.scale.set(2.4,0.65,1); g.add(sp);
+  g.position.set(x,0,z); parent.add(g);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WAREHOUSE 7 – Bodega Aduanera (detallada)
+// ═══════════════════════════════════════════════════════════════
+var wh7 = new THREE.Group();
+wh7.visible=false;
+scene.add(wh7);
+
+(function(){
+  var W=26, D=37;
+  addFloor(wh7,W,D);
+
+  // ══ LAYOUT ══════════════════════════════════════════════════════
+  //  z=0-12   : Racks BB/AA/Y/X/W/V (fondo, ancho completo)
+  //  z=12-21  : [Estudio x=1-7 (centro x=4)] [Operaciones x=7-14] [Devoluciones x=14-26]
+  //  z=21-31  : [Oficinas x=0-8]    [Carga Montacargas x=8-26]
+  //  z=31-37  : [Comedor x=9-17]    [Carga ext.]
+  // ════════════════════════════════════════════════════════════════
+
+  // ── CUADRÍCULA + EJES X / Y EN PISO ───────────────────────────
+  // Líneas de cuadrante cada 4 m (gris sutil)
+  var gc=0x777777;
+  for(var qx=4;qx<W;qx+=4){ addFloorLine(wh7,qx,0,qx,D,0.06,gc); }
+  for(var qz=4;qz<D;qz+=4){ addFloorLine(wh7,0,qz,W,qz,0.06,gc); }
+  // Etiquetas eje X (amarillo, a lo largo de la pared trasera z≈0)
+  for(var ax=0;ax<=W;ax+=4){
+    var spax=makeSprite('X='+ax,'#FFD700','rgba(0,0,0,0.80)',82,28);
+    spax.position.set(ax,0.35,0.7); spax.scale.set(1.3,0.44,1); wh7.add(spax);
+  }
+  // Etiquetas eje Y (celeste, a lo largo de la pared izquierda x≈0)
+  for(var ay=0;ay<=D;ay+=4){
+    var spay=makeSprite('Y='+ay,'#66DDFF','rgba(0,0,0,0.80)',82,28);
+    spay.position.set(0.7,0.35,ay); spay.scale.set(1.3,0.44,1); wh7.add(spay);
+  }
+  // Títulos de eje
+  var spXT=makeSprite('──── EJE  X ────►','#FFD700','rgba(0,0,0,0.85)',240,34);
+  spXT.position.set(13,0.5,-1.2); spXT.scale.set(3.6,0.54,1); wh7.add(spXT);
+  var spYT=makeSprite('──── EJE  Y ────►','#66DDFF','rgba(0,0,0,0.85)',240,34);
+  spYT.position.set(-1.5,0.5,18); spYT.scale.set(3.6,0.54,1); wh7.add(spYT);
+
+  // ── ZONAS DE PISO ──────────────────────────────────────────────
+  addZoneFloor(wh7,  0,  0, W,  12, 0x1F4E79);   // Racks
+  addZoneFloor(wh7,  0, 12, 14,   9, 0xFFE599);   // Operaciones / Embalaje (base)
+  addZoneFloor(wh7,  0, 18,  2.5, 3, 0xD9B3FF);   // Estudio Fotografía (z=18-21)
+  addZoneFloor(wh7, 14, 12, 12,   8, 0xFCE4D6);   // Devoluciones
+  addZoneFloor(wh7,  0, 21,  5,  15, 0xD6DCE4);   // Oficinas (hasta Y=36)
+  addZoneFloor(wh7,  8, 21, 18,  10, 0xC6EFCE);   // Carga Montacargas
+  addZoneFloor(wh7,  0, 31, 26,   6, 0xC6EFCE);   // Carga ext. (base)
+  addModularRoom(wh7, 12, 31, 4, 4, 2.8, 'COMEDOR');
+
+  // ── ETIQUETAS DE ZONA ──────────────────────────────────────────
+  addZoneLabel(wh7,'BODEGA 7 – PRODUCTO ADUANERO',  0, 0,W, 12,'#fff','rgba(31,78,121,0.88)');
+  addZoneLabel(wh7,'OPERACIONES\nEMBALAJE',           0,12, 7, 3,'#333','rgba(200,155,0,0.84)');
+  addZoneLabel(wh7,'ESTUDIO\nFOTO',                   0,18, 2.5, 3,'#fff','rgba(80,0,140,0.88)');
+  addZoneLabel(wh7,'ÁREA DE DEVOLUCIONES',           14,12,12, 8,'#fff','rgba(170,60,30,0.88)', 3.5);
+  addZoneLabel(wh7,'OFICINAS\nEMBALAJE / CALIDAD',   0,21, 5,15,'#fff','rgba(80,95,120,0.88)');
+  // Label "CARGA MONTACARGAS" junto al montacargas (x=24, z=27)
+  var spCargLabel=makeSprite('CARGA MONTACARGAS','#fff','rgba(40,130,40,0.88)',280,58);
+  spCargLabel.position.set(22.5, 0.06, 27.0);
+  spCargLabel.scale.set(4.5, 4.5*0.21, 1);
+  wh7.add(spCargLabel);
+
+  // ── RACKS DE ALMACÉN (fondo, z=0-12) ──────────────────────────
+  var r7c=0x3D7AB3;
+  // 4 grupos: BB | AA+Y | X+W | V — gap entre grupos ≈4.06m, sin separar parejas
+  addRack(wh7,  0.0,  1, 7, 4, 'z', {label:'Rack BB', color:r7c});
+  addRack(wh7,  8.0,  1, 7, 4, 'z', {label:'Rack AA', color:r7c});
+  addRack(wh7,  8.95, 1, 7, 4, 'z', {label:'Rack Y',  color:r7c});
+  addRack(wh7, 16.0,  1, 7, 4, 'z', {label:'Rack X',  color:r7c});
+  addRack(wh7, 16.95, 1, 7, 4, 'z', {label:'Rack W',  color:r7c});
+  addRack(wh7, 25.05, 1, 7, 4, 'z', {label:'Rack V',  color:r7c});
+
+  // ── RACK Z – DEVOLUCIONES ──────────────────────────────────────
+  addRack(wh7, 24.2, 16.0, 1, 2, 'z', {label:'Rack Z – Devoluciones', color:0xD06040, modLen:2.0});
+
+  // ── LÍNEAS DE DEMARCACIÓN ──────────────────────────────────────
+  addFloorLine(wh7,  0, 12,  W, 12, 0.12, 0xFFCC00);  // racks ↔ ops
+  addFloorLine(wh7, 14, 12, 14, 21, 0.10, 0xFFCC00);  // operaciones | devol
+  addFloorLine(wh7,  0, 18,  5, 18, 0.08, 0xAA88FF);  // ops ↓ studio
+  addFloorLine(wh7,  0, 21,  W, 21, 0.12, 0xFF8C00);  // ops ↔ oficinas/carga
+  addFloorLine(wh7,  8, 21,  8, 37, 0.10, 0xFF8C00);  // oficina | carga
+  addFloorLine(wh7,  0, 31,  W, 31, 0.12, 0xFF8C00);  // comedor ↔ ext
+
+  // ── CUADRANTE OPERACIONES (x=0-14, z=12-15) ──────────────────
+  // Dos líneas de 2 mesas enfrentadas
+  // Línea A (z=12.5) – orientadas hacia adelante
+  addWorkTable(wh7,  3.5, 12.5, 1.4, 0.65, 0,          'Mesa 1');
+  addWorkTable(wh7,  7.5, 12.5, 1.4, 0.65, 0,          'Mesa 2');
+  // Línea B (z=13.8) – orientadas de frente a línea A
+  addWorkTable(wh7,  3.5, 13.8, 1.4, 0.65, Math.PI,    'Mesa 3');
+  addWorkTable(wh7,  7.5, 13.8, 1.4, 0.65, Math.PI,    'Mesa 4');
+  // Emplayadora en perímetro izquierdo (x=0), entre Mesa 1 y Mesa 3
+  addEmplayadora(wh7, 0.8, 13.2);
+  // Encintadora automática + mesa pegada (entre Mesa 3 y Mesa 4)
+  addEncintadora(wh7, 5.5, 15.4, 0);
+  addWorkTable(wh7, 6.65, 15.4, 1.1, 0.55, Math.PI/2, '');
+
+  // ── RACK CALIDAD – 1 módulo, 1 nivel, horizontal entre emplayadora (z≈13.2) y estudio (z≈18.2) ──
+  addRack(wh7, 0.3, 15.5, 1, 2, 'x', {label:'Rack Insumos', color:0x70AD47, levelH:0.9});
+  // Escritorio inspector de calidad justo enfrente del rack
+  addWorkTable(wh7, 1.8, 15.5, 1.2, 0.60, Math.PI/2, 'Inspector\nCalidad');
+
+  // ── MÓDULO ESTUDIO DE FOTOGRAFÍA (z=18-21, más pequeño) ──
+  addModularRoom(wh7, 0.3, 18.2, 2.2, 2.5, 2.8, 'ESTUDIO\nFOTO');
+
+  // ── TARIMAS DE DEVOLUCIONES (2 tarimas – frente a escritorios x≈21.5) ───
+  addPallet(wh7, 19.2, 15.0, 2, 0xE07040);
+  addPallet(wh7, 19.2, 17.5, 2, 0xC05030);
+  var spTar=makeSprite('TARIMAS\nDEVOLUCIONES','#fff','rgba(170,60,30,0.88)',180,46);
+  spTar.position.set(19.2,2.2,16.2); spTar.scale.set(2.4,0.62,1); wh7.add(spTar);
+
+  // ── ÁREA DE DEVOLUCIONES – 4 escritorios en línea sobre eje Y frente al Rack Z ──
+  // Columna a x≈21.5, distribuidos a lo largo de z=13-20, mirando al rack (hacia +X)
+  addDesk(wh7, 21.5, 13.0, -Math.PI/2);
+  addDesk(wh7, 21.5, 15.5, -Math.PI/2);
+  addDesk(wh7, 21.5, 18.0, -Math.PI/2);
+  addDesk(wh7, 21.5, 20.5, -Math.PI/2);
+
+  // ── MÓDULO OFICINAS (x=0-8, z=21-31) ─────────────────────────
+  addModularRoom(wh7, 0.4, 21.5, 4.5, 14.5, 2.8, 'OFICINAS\nEMBALAJE · CALIDAD');
+  addFireExtinguisher(wh7, 4.5, 22.0);
+
+  // ── ZONA DE CARGA / MONTACARGAS (perímetro x≈24, z=21-31) ──────
+  addForklift(wh7, 24.0, 27.0, Math.PI);
+
+  // ZONA DE SCRAP: pallets azules + conos (x=21-25, z=21-26)
+  addPallet(wh7, 22.5, 22.0, 3, 0x1F4E79);
+  addPallet(wh7, 24.0, 22.0, 3, 0x2E75B6);
+  addPallet(wh7, 22.5, 23.8, 2, 0x4472C4);
+  addPallet(wh7, 24.0, 23.8, 3, 0x5B9BD5);
+  addPallet(wh7, 22.5, 25.5, 2, 0x264478);
+  addSafetyCone(wh7, 21.2, 21.5);
+  addSafetyCone(wh7, 21.2, 23.0);
+  addSafetyCone(wh7, 21.2, 24.5);
+  // Anuncio de zona de scrap sobre los conos/pallets
+  var spScrap=makeSprite(' ZONA DE SCRAP','#333','rgba(200,200,200,0.92)',220,42);
+  spScrap.position.set(23,2.4,23.5); spScrap.scale.set(3.2,0.62,1); wh7.add(spScrap);
+
+
+
+  // ── COMEDOR (x=9-17, z=31-37 — centrado) ─────────────────────
+  // Interior comedor: x=10.3-13.7, z=31.3-34.7
+  // Mesa 1
+  addDiningTable(wh7, 13.3, 32.3, 1.2, 0.65);
+  addChair(wh7, 12.6, 32.3,  Math.PI/2, 0x334455);
+  addChair(wh7, 14.0, 32.3, -Math.PI/2, 0x334455);
+  addChair(wh7, 13.3, 31.6,  0,         0x334455);
+  addChair(wh7, 13.3, 33.0,  Math.PI,   0x334455);
+
+  // Mesa 2
+  addDiningTable(wh7, 15.0, 32.3, 1.2, 0.65);
+  addChair(wh7, 14.3, 32.3,  Math.PI/2, 0x334455);
+  addChair(wh7, 15.7, 32.3, -Math.PI/2, 0x334455);
+  addChair(wh7, 15.0, 31.6,  0,         0x334455);
+  addChair(wh7, 15.0, 33.0,  Math.PI,   0x334455);
+
+  // Barra al fondo del comedor
+  addSolidBox(wh7, 12.3, 34.2, 3.4, 0.55, 1.0, 0xAA8850, '');
+  addSolidBox(wh7, 12.6, 33.9, 0.36, 0.26, 0.26, 0x1a1a1a, '');  // Microondas
+  addSolidBox(wh7, 13.2, 33.9, 0.22, 0.16, 0.30, 0xBBBBBB, '');  // Cafetera
+
+  var spCom=makeSprite('COMEDOR','#333','rgba(200,165,60,0.90)',180,36);
+  spCom.position.set(14.0,2.5,33.0); spCom.scale.set(1.8,0.52,1); wh7.add(spCom);
+
+  // ── AUTOMÓVILES entre Oficinas (x≈5) y Comedor (x=10) ───────────
+  addCar(wh7, 6.5, 33.0, 0xCC1111, 0);   // Rojo
+  addCar(wh7, 6.5, 35.0, 0xEEEEEE, 0);   // Blanco
+  // ── PUERTA en perímetro izquierdo x=0, enfrente de los autos ─────
+  addPuerta(wh7, 0.04, 34.0, Math.PI/2);
+
+  // ── BAÑOS (detrás del comedor, z=35-37) ─────────────────────────
+  addModularRoom(wh7, 12.0, 35.2, 1.8, 1.6, 2.8, ' HOMBRES');
+  addModularRoom(wh7, 14.1, 35.2, 1.8, 1.6, 2.8, ' MUJERES');
+
+  // ── CORTINAS INDUSTRIALES – línea naranja z=31, junto al comedor ──
+  addCortina(wh7, 18.5, 31.0);
+  addCortina(wh7, 21.5, 31.0);
+  addCortina(wh7, 24.5, 31.0);
+
+  // ── TRAILERS + RAMPA – detrás de cada cortina ────────────────────
+  addRampa(wh7,  18.5, 34.5, 0);      // Cortina 1 (junto al comedor) → rampa
+  addTrailer(wh7, 21.5, 35.0);        // Cortina 2 → trailer
+  addTrailer(wh7, 24.5, 35.0);        // Cortina 3 → trailer
+
+  // ══════════════════════════════════════════════════════════════════════
+  // ── SEGURIDAD Y DEMARCACIÓN ───────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════
+
+  // ── PASILLOS PEATONALES (franjas blancas en piso) ─────────────────────
+  // Corredor principal norte-sur (x=8, z=12→31)
+  addFloorLine(wh7, 8.0, 12, 8.0, 31, 1.0, 0xEEEEEE);
+  // Cruce este-oeste en z=21 (ops → zona carga)
+  addFloorLine(wh7, 0.0, 21.0, 8.0, 21.0, 1.0, 0xEEEEEE);
+  // Señal de pasillo peatonal
+  var spPed=makeSprite(' PASILLO\nPEATONAL','#333','rgba(240,240,240,0.88)',200,46);
+  spPed.position.set(8.0,2.0,22.0); spPed.scale.set(2.4,0.62,1); wh7.add(spPed);
+
+  // ── CARRIL DE MONTACARGAS ─────────────────────────────────────────────
+  // Borde izquierdo del carril (x=20.5, z=12→31)
+  addFloorLine(wh7, 20.5, 12, 20.5, 31, 0.22, 0xFF6600);
+  // Franjas diagonales internas (hatching)
+  for(var lfi=13;lfi<31;lfi+=2.2){
+    addFloorLine(wh7, 20.7, lfi, 25.8, lfi+0.22, 0.09, 0xFF6600);
+  }
+  var spCarril=makeSprite(' CARRIL\nMONTACARGAS','#fff','rgba(200,90,0,0.90)',210,50);
+  spCarril.position.set(23.5,2.3,25.0); spCarril.scale.set(2.8,0.68,1); wh7.add(spCarril);
+
+  // ── BOLLARDS – frente zona de racks (z≈12) ───────────────────────────
+  addBollard(wh7, 0.5,  12.4);
+  addBollard(wh7, 7.5,  12.4);
+  addBollard(wh7, 9.5,  12.4);
+  addBollard(wh7, 15.5, 12.4);
+  addBollard(wh7, 17.5, 12.4);
+  addBollard(wh7, 25.5, 12.4);
+  // Bollards – entrada zona de carga (z≈21)
+  addBollard(wh7, 20.5, 21.4);
+  // Bollards – cortinas industriales (z≈31)
+  addBollard(wh7, 17.2, 31.3);
+  addBollard(wh7, 20.2, 31.3);
+  addBollard(wh7, 23.2, 31.3);
+
+  // ── POSTES DE ADVERTENCIA EN COLUMNAS ESTRUCTURALES ──────────────────
+  addHazardPost(wh7,  8.0, 12.8);   // columna: ops/racks izq
+  addHazardPost(wh7, 16.0, 12.8);   // columna: ops/racks der
+  addHazardPost(wh7,  8.0, 24.0);   // columna: zona carga izq
+  addHazardPost(wh7, 16.0, 24.0);   // columna: zona carga der
+
+  // ── SEÑALES DE SALIDA / EMERGENCIA ───────────────────────────────────
+  addExitSign(wh7,  1.0, 34.8,  0);          // salida principal (puerta x=0)
+  addExitSign(wh7,  7.5, 30.8,  Math.PI);    // corredor → exterior
+  addExitSign(wh7, 11.5, 29.5,  Math.PI);    // carga → comedor/exterior
+
+  // ── EXTINTORES ADICIONALES ────────────────────────────────────────────
+  addFireExtinguisher(wh7,  0.3,  6.0);     // pared izq, zona racks
+  addFireExtinguisher(wh7, 25.7,  6.0);     // pared der, zona racks
+  addFireExtinguisher(wh7, 13.5, 11.5);     // frontera racks / ops
+  addFireExtinguisher(wh7, 14.5, 29.5);     // zona de carga
+  addFireExtinguisher(wh7, 11.5, 34.5);     // zona comedor / baños
+
+  // ── SEÑALES EPP OBLIGATORIO ───────────────────────────────────────────
+  addEPPSign(wh7,  4.0, 12.4,  Math.PI);   // entrada zona racks (cara al rack)
+  addEPPSign(wh7, 20.3, 21.6,  0);         // entrada zona montacargas
+
+  // ── ESTACIÓN DE PRIMEROS AUXILIOS ────────────────────────────────────
+  addFirstAid(wh7, 7.5, 21.8);             // corredor peatonal, cruce z=21
+
+  // ── PERÍMETRO NEGRO ──
+  addFloorLine(wh7,  0,  0,  W,  0, 0.18, 0x111111);  // frente
+  addFloorLine(wh7,  0,  D,  W,  D, 0.18, 0x111111);  // fondo
+  addFloorLine(wh7,  0,  0,  0,  D, 0.18, 0x111111);  // izquierda
+  addFloorLine(wh7,  W,  0,  W,  D, 0.18, 0x111111);  // derecha
+
+  addWalls(wh7,W,D,14);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// CONTROLES DE CÁMARA
+// ═══════════════════════════════════════════════════════════════
+var target=new THREE.Vector3(24,0,35);
+var sph={r:90,phi:0.52,theta:0.42};
+var dragging=false, rightDrag=false, prev={x:0,y:0};
+
+function updateCam(){
+  camera.position.set(
+    target.x + sph.r*Math.sin(sph.phi)*Math.sin(sph.theta),
+    target.y + sph.r*Math.cos(sph.phi),
+    target.z + sph.r*Math.sin(sph.phi)*Math.cos(sph.theta)
+  );
+  camera.lookAt(target);
+}
+updateCam();
+
+renderer.domElement.addEventListener('mousedown',function(e){
+  dragging=true; rightDrag=e.button===2;
+  prev.x=e.clientX; prev.y=e.clientY; e.preventDefault();
+});
+renderer.domElement.addEventListener('contextmenu',function(e){e.preventDefault();});
+window.addEventListener('mouseup',function(){dragging=false;});
+window.addEventListener('mousemove',function(e){
+  if(!dragging) return;
+  var dx=(e.clientX-prev.x)*0.005, dy=(e.clientY-prev.y)*0.005;
+  prev.x=e.clientX; prev.y=e.clientY;
+  if(rightDrag){
+    var right=new THREE.Vector3();
+    camera.getWorldDirection(right); right.cross(new THREE.Vector3(0,1,0)).normalize();
+    target.addScaledVector(right,-dx*sph.r*0.14);
+    target.y+=dy*sph.r*0.08;
+  } else {
+    sph.theta-=dx;
+    sph.phi=Math.max(0.08,Math.min(1.5,sph.phi+dy));
+  }
+  updateCam();
+});
+renderer.domElement.addEventListener('wheel',function(e){
+  sph.r=Math.max(4,Math.min(200,sph.r+e.deltaY*0.07));
+  updateCam(); e.preventDefault();
+},{passive:false});
+
+// Touch
+var lastT=[];
+renderer.domElement.addEventListener('touchstart',function(e){
+  lastT=Array.from(e.touches).map(function(t){return{x:t.clientX,y:t.clientY};});
+},{passive:true});
+renderer.domElement.addEventListener('touchmove',function(e){
+  var cur=Array.from(e.touches).map(function(t){return{x:t.clientX,y:t.clientY};});
+  if(cur.length===1&&lastT.length>=1){
+    sph.theta-=(cur[0].x-lastT[0].x)*0.005;
+    sph.phi=Math.max(0.08,Math.min(1.5,sph.phi+(cur[0].y-lastT[0].y)*0.005));
+    updateCam();
+  }else if(cur.length===2&&lastT.length===2){
+    var d0=Math.hypot(lastT[1].x-lastT[0].x,lastT[1].y-lastT[0].y);
+    var d1=Math.hypot(cur[1].x-cur[0].x,cur[1].y-cur[0].y);
+    sph.r=Math.max(4,Math.min(200,sph.r-(d1-d0)*0.06)); updateCam();
+  }
+  lastT=cur;
+},{passive:true});
+
+// ═══════════════════════════════════════════════════════════════
+// SWITCH DE BODEGA
+// ═══════════════════════════════════════════════════════════════
+function switchW(id,btn){
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  if(id===1){
+    wh1.visible=true; wh7.visible=false;
+    target.set(24,0,35); sph.r=90; sph.phi=0.52; sph.theta=0.42;
+    document.getElementById('s-racks').textContent='18';
+    document.getElementById('s-mods').textContent='181';
+    document.getElementById('s-pos').textContent='660';
+  }else{
+    wh1.visible=false; wh7.visible=true;
+    target.set(13,0,22); sph.r=65; sph.phi=0.52; sph.theta=0.38;
+    document.getElementById('s-racks').textContent='7';
+    document.getElementById('s-mods').textContent='49';
+    document.getElementById('s-pos').textContent='196';
+  }
+  updateCam();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('resize',function(){
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+(function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);})();
+</script>
+
+<!-- ── MARCA DE AGUA ARGENPARTS AG ─────────────────────────────────── -->
+<div id="watermark" style="
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:200px;
+  opacity:0.18;
+  pointer-events:none;
+  z-index:9999;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4));
+  user-select:none;
+">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200" width="200" height="182">
+    <!-- Triángulo redondeado azul AG -->
+    <path d="M95,41 Q110,15 125,41 L191,159 Q206,186 176,186 L44,186 Q14,186 29,159 Z"
+          fill="#29ABE2"/>
+    <!-- Letras AG en blanco -->
+    <text x="110" y="163"
+          font-family="Arial Black, Arial, Helvetica, sans-serif"
+          font-weight="900"
+          font-size="83"
+          fill="white"
+          text-anchor="middle"
+          letter-spacing="-2">AG</text>
+  </svg>
+</div>
+
+</body>
+</html>

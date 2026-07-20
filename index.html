@@ -3,572 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bodega 7 — Layout 3D Interactivo | Argenparts</title>
+<title>Layouts 3D · Almacenes Argenparts AG</title>
 <style>
-  :root{
-    --panel-bg: rgba(255,255,255,0.92);
-    --ink:#1c2733;
-    --accent:#1e5aa8;
-  }
   *{margin:0;padding:0;box-sizing:border-box;}
-  html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);}
-  #app{width:100%;height:100%;}
-  canvas{display:block;}
-
-  .panel{
-    position:absolute;background:var(--panel-bg);border:1px solid #cfd8e3;
-    border-radius:10px;box-shadow:0 4px 18px rgba(20,40,70,.18);backdrop-filter:blur(6px);
+  body{
+    min-height:100vh;font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:linear-gradient(160deg,#0d1b2a 0%,#14304f 60%,#1F4E79 100%);
+    color:#eaf1f8;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:32px 16px;
   }
-  #titlebar{top:12px;left:12px;padding:10px 16px;max-width:340px;}
-  #titlebar h1{font-size:16px;letter-spacing:.4px;}
-  #titlebar p{font-size:11.5px;color:#51606f;margin-top:2px;}
-
-  #legend{top:96px;left:12px;width:262px;max-height:calc(100% - 280px);overflow-y:auto;padding:10px 12px;}
-  #legend h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#51606f;margin-bottom:8px;}
-  .zrow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px;}
-  .zrow:hover{background:#e8f0fa;}
-  .chip{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.25);flex:0 0 14px;}
-  .zletter{font-weight:700;width:18px;flex:0 0 18px;}
-
-  #layers{bottom:12px;left:12px;padding:10px 12px;font-size:12px;}
-  #layers h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#51606f;margin-bottom:6px;}
-  #layers label{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;user-select:none;}
-
-  #views{top:12px;right:12px;padding:8px;display:flex;gap:6px;}
-  #views button{
-    border:1px solid #b9c6d4;background:#fff;border-radius:6px;padding:6px 12px;
-    font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;
+  .logo{
+    width:86px;margin-bottom:14px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
   }
-  #views button:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
-
-  #info{
-    display:none;right:12px;top:64px;width:250px;padding:12px 14px;
+  h1{font-size:26px;letter-spacing:1.5px;text-align:center;}
+  p.sub{color:#9db8d4;font-size:13px;margin:8px 0 36px;text-align:center;max-width:520px;}
+  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;max-width:900px;}
+  a.card{
+    display:block;width:360px;max-width:92vw;text-decoration:none;color:inherit;
+    background:rgba(255,255,255,.06);border:1px solid rgba(120,180,240,.25);
+    border-radius:16px;padding:26px 26px 22px;transition:.22s;
+    box-shadow:0 6px 26px rgba(0,0,0,.35);
   }
-  #info h3{font-size:14px;margin-bottom:4px;}
-  #info .tag{display:inline-block;background:var(--accent);color:#fff;border-radius:4px;
-    padding:1px 8px;font-size:11px;font-weight:700;margin-bottom:6px;}
-  #info p{font-size:12px;line-height:1.5;color:#3c4a58;}
-  #info .close{position:absolute;top:6px;right:10px;cursor:pointer;color:#8091a2;font-size:14px;}
-
-  #hint{
-    position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-    background:rgba(28,39,51,.78);color:#e8eef5;font-size:11.5px;
-    padding:6px 14px;border-radius:20px;pointer-events:none;white-space:nowrap;
+  a.card:hover{
+    transform:translateY(-4px);background:rgba(46,117,182,.28);
+    border-color:#5ca3e0;box-shadow:0 12px 34px rgba(0,0,0,.5);
   }
-  #toggleLegend{position:absolute;top:62px;left:12px;font-size:11px;border:none;background:transparent;
-    color:var(--accent);cursor:pointer;text-decoration:underline;display:none;}
-  @media (max-width:760px){
-    #legend{display:none;}
-    #toggleLegend{display:block;}
-    #hint{display:none;}
-    #titlebar{max-width:230px;}
+  .card .ico{font-size:34px;}
+  .card h2{font-size:18px;margin:10px 0 6px;color:#fff;}
+  .card p{font-size:12.5px;line-height:1.65;color:#b9cde2;}
+  .card .go{
+    display:inline-block;margin-top:14px;background:#2E75B6;color:#fff;
+    font-size:12px;font-weight:700;padding:7px 18px;border-radius:20px;letter-spacing:.4px;
   }
+  footer{margin-top:40px;font-size:11px;color:#7f9ab8;text-align:center;line-height:1.8;}
+  footer a{color:#9dc4ea;}
 </style>
 </head>
 <body>
-<div id="app"></div>
+  <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200">
+    <path d="M95,41 Q110,15 125,41 L191,159 Q206,186 176,186 L44,186 Q14,186 29,159 Z" fill="#29ABE2"/>
+    <text x="110" y="163" font-family="Arial Black, Arial, sans-serif" font-weight="900"
+          font-size="83" fill="white" text-anchor="middle" letter-spacing="-2">AG</text>
+  </svg>
+  <h1>LAYOUTS 3D · ALMACENES ARGENPARTS</h1>
+  <p class="sub">Selecciona la bodega que quieres recorrer. Los visores son interactivos: orbitar, zoom y desplazamiento con mouse o con gestos en celular.</p>
 
-<div class="panel" id="titlebar">
-  <h1>BODEGA 7 · LAYOUT 3D</h1>
-  <p>Argenparts · 28.20 m × 66.27 m · Escala real (metros) · Racks: 5×(4 niveles) + 1×(3 niveles), 7 módulos de 3 m c/u</p>
-</div>
-<button id="toggleLegend">Mostrar leyenda</button>
+  <div class="cards">
+    <a class="card" href="almacen-general.html">
+      <div class="ico">🏭</div>
+      <h2>Almacén General AG</h2>
+      <p>Bodegas 1 · 2 · 3 · 5 y Bodega 7 aduanera detallada: racks, zonas ecommerce
+         (MELI / Amazon / Shopify), maquila, operaciones, equipos, señalización y seguridad.
+         Cambia de bodega con las pestañas superiores.</p>
+      <span class="go">ABRIR VISOR ►</span>
+    </a>
+    <a class="card" href="bodega7.html">
+      <div class="ico">📐</div>
+      <h2>Bodega 7 · Plano SolidWorks</h2>
+      <p>Versión a escala real del plano "Lay Out Ag Bodega 7" (28.20 × 66.27 m):
+         racks BB–V con módulos de 3 m, zonas A–Z clicables con dimensiones y m²,
+         extintores, cotas y capas encendibles.</p>
+      <span class="go">ABRIR VISOR ►</span>
+    </a>
+  </div>
 
-<div class="panel" id="legend">
-  <h2>Zonas (clic para ir)</h2>
-  <div id="zoneList"></div>
-</div>
-
-<div class="panel" id="layers">
-  <h2>Capas</h2>
-  <label><input type="checkbox" id="lyRacks"   checked> Racks</label>
-  <label><input type="checkbox" id="lyCargo"   checked> Mercancía</label>
-  <label><input type="checkbox" id="lyZones"   checked> Zonas</label>
-  <label><input type="checkbox" id="lyWalls"   checked> Paredes</label>
-  <label><input type="checkbox" id="lyLabels"  checked> Etiquetas</label>
-  <label><input type="checkbox" id="lyExt"     checked> Extintores (11)</label>
-  <label><input type="checkbox" id="lyDims"    checked> Cotas</label>
-</div>
-
-<div class="panel" id="views">
-  <button id="vIso">Isométrica</button>
-  <button id="vTop">Planta</button>
-  <button id="vFront">Frente</button>
-</div>
-
-<div class="panel" id="info">
-  <span class="close" id="infoClose">✕</span>
-  <span class="tag" id="infoLetter"></span>
-  <h3 id="infoName"></h3>
-  <p id="infoBody"></p>
-</div>
-
-<div id="hint">🖱️ Arrastrar: orbitar · Rueda: zoom · Clic derecho: desplazar · Clic en una zona: información</div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
-<script>
-'use strict';
-/* ============================================================
-   BODEGA 7 — VISOR 3D INTERACTIVO (Argenparts)
-   Fuente: plano "Lay Out Ag Bodega 7" (SolidWorks, esc. 1:200)
-   Sistema de coordenadas del plano: x = izquierda→derecha,
-   y = arriba→abajo. Mundo 3D: X = x-14.10, Z = y-33.135.
-   ============================================================ */
-
-const W = 28.20, L = 66.27, WALL_H = 9.0;
-const cx = W/2, cz = L/2;
-const toX = x => x - cx;
-const toZ = y => y - cz;
-
-/* ---------- Escena base ---------- */
-const container = document.getElementById('app');
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xe4ebf2);
-scene.fog = new THREE.Fog(0xe4ebf2, 160, 320);
-
-const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 600);
-camera.position.set(42, 38, 58);
-
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 1, 0);
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-controls.maxPolarAngle = Math.PI/2 - 0.02;
-controls.minDistance = 4;
-controls.maxDistance = 220;
-
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8a929c, 0.75));
-const sun = new THREE.DirectionalLight(0xffffff, 0.85);
-sun.position.set(45, 70, 30);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left=-60; sun.shadow.camera.right=60;
-sun.shadow.camera.top=60;   sun.shadow.camera.bottom=-60;
-sun.shadow.camera.far=200;
-scene.add(sun);
-
-/* ---------- Grupos / capas ---------- */
-const gRacks  = new THREE.Group();
-const gCargo  = new THREE.Group();
-const gZones  = new THREE.Group();
-const gWalls  = new THREE.Group();
-const gLabels = new THREE.Group();
-const gExt    = new THREE.Group();
-const gDims   = new THREE.Group();
-scene.add(gRacks,gCargo,gZones,gWalls,gLabels,gExt,gDims);
-
-const pickables = []; // meshes clicables con userData.info
-
-/* ---------- Terreno y piso ---------- */
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(400,400),
-  new THREE.MeshLambertMaterial({color:0xcdd6de})
-);
-ground.rotation.x = -Math.PI/2; ground.position.y = -0.02;
-ground.receiveShadow = true;
-scene.add(ground);
-
-const grid = new THREE.GridHelper(400, 100, 0xb4c0cc, 0xc3cdd7);
-grid.position.y = -0.01;
-scene.add(grid);
-
-const floor = new THREE.Mesh(
-  new THREE.BoxGeometry(W, 0.1, L),
-  new THREE.MeshLambertMaterial({color:0x565b60})
-);
-floor.position.y = 0.05;
-floor.receiveShadow = true;
-scene.add(floor);
-
-/* ---------- Paredes perimetrales (translúcidas) ---------- */
-function wall(w,h,d,x,y,z){
-  const m = new THREE.Mesh(
-    new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshLambertMaterial({color:0xa8b4bf, transparent:true, opacity:0.15, depthWrite:false})
-  );
-  m.position.set(x,y,z);
-  gWalls.add(m);
-  const e = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d)),
-    new THREE.LineBasicMaterial({color:0x5d6b7a})
-  );
-  e.position.copy(m.position);
-  gWalls.add(e);
-}
-const T=0.25;
-wall(W+2*T, WALL_H, T, 0, WALL_H/2, toZ(0)-T/2);       // norte
-wall(W+2*T, WALL_H, T, 0, WALL_H/2, toZ(L)+T/2);       // sur
-wall(T, WALL_H, L, toX(0)-T/2, WALL_H/2, 0);           // oeste
-wall(T, WALL_H, L, toX(W)+T/2, WALL_H/2, 0);           // este
-
-// Portones de andén (zona A, muro sur)
-for(let i=0;i<2;i++){
-  const door = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 4.2, 0.12),
-    new THREE.MeshLambertMaterial({color:0xf2f5f8})
-  );
-  door.position.set(toX(20.5 + i*4.6), 2.1, toZ(L)-0.08);
-  gWalls.add(door);
-  const de = new THREE.LineSegments(
-    new THREE.EdgesGeometry(door.geometry),
-    new THREE.LineBasicMaterial({color:0x7a8794})
-  );
-  de.position.copy(door.position);
-  gWalls.add(de);
-}
-
-/* ---------- Utilidad: sprite de texto ---------- */
-function textSprite(text, opts={}){
-  const {fontSize=64, color='#1c2733', bg=null, scale=1} = opts;
-  const cv = document.createElement('canvas');
-  let ctx = cv.getContext('2d');
-  ctx.font = `700 ${fontSize}px Segoe UI, Arial`;
-  const tw = ctx.measureText(text).width;
-  cv.width = tw + 40; cv.height = fontSize + 40;
-  ctx = cv.getContext('2d');
-  if(bg){
-    ctx.fillStyle = bg;
-    ctx.beginPath();
-    if(ctx.roundRect){ ctx.roundRect(0,0,cv.width,cv.height,18); } else { ctx.rect(0,0,cv.width,cv.height); }
-    ctx.fill();
-  }
-  ctx.font = `700 ${fontSize}px Segoe UI, Arial`;
-  ctx.fillStyle = color;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(text, cv.width/2, cv.height/2);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.anisotropy = 4;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
-  const aspect = cv.width/cv.height;
-  sp.scale.set(1.6*aspect*scale, 1.6*scale, 1);
-  return sp;
-}
-
-/* ============================================================
-   ZONAS (según leyenda del plano)
-   ============================================================ */
-const ZONES = [
- {letter:'A', name:'Zona de Carga y Descarga', x:18.2, y:55.3, w:10.0, d:10.97, color:0xf5f6f8, room:false},
- {letter:'B', name:'Taller de Fotografía',     x:0.0,  y:36.0, w:2.0,  d:5.0,  color:0xc9b28a, room:true},
- {letter:'C', name:'Baño',                     x:13.55,y:60.8, w:4.65, d:5.47, color:0xc9b28a, room:true},
- {letter:'D', name:'Taller de MKT',            x:5.13, y:55.3, w:8.42, d:10.97,color:0xb9a075, room:true},
- {letter:'E', name:'Control de Calidad / Desarrollos / Catalogación', x:0.0, y:55.3, w:5.13, d:10.97, color:0xc9b28a, room:true},
- {letter:'F', name:'Zona de Embalaje',         x:4.5,  y:26.0, w:8.0,  d:8.0,  color:0xf0c95c, room:false},
- {letter:'G', name:'Almacén / Racks',          x:1.0,  y:0.5,  w:26.2, d:23.5, color:0x8fa8c8, room:false, subtle:true},
- {letter:'H', name:'Cocina',                   x:13.55,y:55.3, w:4.65, d:5.5,  color:0xc9b28a, room:true},
- {letter:'I', name:'Túnel',                    x:2.0,  y:0.5,  w:3.0,  d:22.0, color:0xf7e64a, room:false, tunnel:true},
- {letter:'Z', name:'Devoluciones',             x:16.5, y:26.0, w:2.0,  d:4.0,  color:0x9aa8c4, room:false},
-];
-
-const ROOM_H = 3.0;
-ZONES.forEach(z=>{
-  const wx = toX(z.x + z.w/2), wz = toZ(z.y + z.d/2);
-  const info = {
-    letter: z.letter, name: z.name,
-    body: `Dimensiones: ${z.w.toFixed(2)} m × ${z.d.toFixed(2)} m<br>Superficie: ${(z.w*z.d).toFixed(1)} m²`
-  };
-
-  // Piso de zona
-  const fl = new THREE.Mesh(
-    new THREE.BoxGeometry(z.w, 0.06, z.d),
-    new THREE.MeshLambertMaterial({color:z.color, transparent:!!z.subtle, opacity:z.subtle?0.28:1})
-  );
-  fl.position.set(wx, 0.13, wz);
-  fl.receiveShadow = true;
-  fl.userData.info = info;
-  gZones.add(fl); pickables.push(fl);
-
-  const fe = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(z.w,0.06,z.d)),
-    new THREE.LineBasicMaterial({color:0x2f3b47})
-  );
-  fe.position.copy(fl.position);
-  gZones.add(fe);
-
-  // Muros de cuartos (sin techo, para ver desde arriba)
-  if(z.room){
-    const wm = new THREE.MeshLambertMaterial({color:z.color});
-    const t=0.12;
-    const parts = [
-      [z.w, ROOM_H, t, wx, ROOM_H/2, toZ(z.y)+t/2],
-      [z.w, ROOM_H, t, wx, ROOM_H/2, toZ(z.y+z.d)-t/2],
-      [t, ROOM_H, z.d, toX(z.x)+t/2, ROOM_H/2, wz],
-      [t, ROOM_H, z.d, toX(z.x+z.w)-t/2, ROOM_H/2, wz],
-    ];
-    parts.forEach(p=>{
-      const m = new THREE.Mesh(new THREE.BoxGeometry(p[0],p[1],p[2]), wm);
-      m.position.set(p[3],p[4],p[5]);
-      m.castShadow = true; m.userData.info = info;
-      gZones.add(m); pickables.push(m);
-      const e = new THREE.LineSegments(
-        new THREE.EdgesGeometry(m.geometry),
-        new THREE.LineBasicMaterial({color:0x6e5f43})
-      );
-      e.position.copy(m.position);
-      gZones.add(e);
-    });
-  }
-
-  // Túnel: arcos amarillos
-  if(z.tunnel){
-    const arcMat = new THREE.MeshLambertMaterial({color:0xd9c614});
-    for(let j=0;j<=7;j++){
-      const arc = new THREE.Mesh(new THREE.TorusGeometry(z.w/2, 0.06, 8, 20, Math.PI), arcMat);
-      arc.position.set(wx, 0.1, toZ(z.y + j*(z.d/7)));
-      gZones.add(arc);
-    }
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,z.d), arcMat);
-    rail.position.set(wx, z.w/2+0.1, wz);
-    gZones.add(rail);
-  }
-
-  // Etiqueta
-  const lb = textSprite(z.letter, {fontSize:90, color:'#ffffff', bg:'rgba(30,90,168,0.92)', scale:1.15});
-  lb.position.set(wx, z.room?ROOM_H+1.1:2.2, wz);
-  gLabels.add(lb);
-});
-
-/* ============================================================
-   RACKS — 7 módulos de 3 m (21 m); azul: postes, naranja: vigas
-   ============================================================ */
-const RACK_Y0 = 1.0, RACK_LEN = 21.0, RACK_DEP = 1.1, MODS = 7;
-const ROWS = [
-  {label:'BB', x:6.5,  levels:4},
-  {label:'AA', x:10.0, levels:4},
-  {label:'Y',  x:11.4, levels:4},
-  {label:'X',  x:16.2, levels:4},
-  {label:'W',  x:17.6, levels:4},
-  {label:'V',  x:22.4, levels:3},
-];
-const matPost = new THREE.MeshLambertMaterial({color:0x1e5aa8});
-const matBeam = new THREE.MeshLambertMaterial({color:0xe8720c});
-const matPallet = new THREE.MeshLambertMaterial({color:0x9c7a4c});
-const matBox  = new THREE.MeshLambertMaterial({color:0xc49a6c});
-const geoPost4 = new THREE.BoxGeometry(0.1, 6.2, 0.1);
-const geoPost3 = new THREE.BoxGeometry(0.1, 4.6, 0.1);
-const geoBeam  = new THREE.BoxGeometry(0.1, 0.12, 3.0);
-const geoPallet= new THREE.BoxGeometry(0.95, 0.12, 1.2);
-
-let seed = 7; // pseudo-aleatorio determinista
-function rnd(){ seed = (seed*9301+49297)%233280; return seed/233280; }
-
-ROWS.forEach(r=>{
-  const wx = toX(r.x);
-  const beamsY = r.levels===4 ? [1.5,3.0,4.5] : [1.7,3.4];
-  const postGeo = r.levels===4 ? geoPost4 : geoPost3;
-  const postH   = r.levels===4 ? 6.2 : 4.6;
-  const info = {
-    letter:r.label, name:`Rack ${r.label}`,
-    body:`${r.levels} niveles · ${MODS} módulos de 3 m<br>Longitud: ${RACK_LEN} m · Ubicaciones: módulos 1–7`
-  };
-  const rack = new THREE.Group();
-
-  for(let i=0;i<=MODS;i++){
-    const zPos = toZ(RACK_Y0 + i*3);
-    [-RACK_DEP/2, RACK_DEP/2].forEach(off=>{
-      const p = new THREE.Mesh(postGeo, matPost);
-      p.position.set(wx+off, postH/2+0.1, zPos);
-      p.castShadow = true; p.userData.info = info;
-      rack.add(p); pickables.push(p);
-    });
-    // travesaño de marco
-    const brace = new THREE.Mesh(new THREE.BoxGeometry(RACK_DEP,0.06,0.06), matPost);
-    brace.position.set(wx, 0.4, zPos);
-    rack.add(brace);
-  }
-  for(let i=0;i<MODS;i++){
-    const zPos = toZ(RACK_Y0 + i*3 + 1.5);
-    beamsY.forEach(by=>{
-      [-RACK_DEP/2, RACK_DEP/2].forEach(off=>{
-        const b = new THREE.Mesh(geoBeam, matBeam);
-        b.position.set(wx+off, by+0.1, zPos);
-        b.userData.info = info;
-        rack.add(b); pickables.push(b);
-      });
-    });
-    // Mercancía: tarimas + cajas por nivel (incluye piso)
-    const lvls = [0].concat(beamsY);
-    lvls.forEach(by=>{
-      if(rnd() < 0.72){
-        for(let k=0;k<2;k++){
-          const pz = zPos + (k===0?-0.75:0.75);
-          const pal = new THREE.Mesh(geoPallet, matPallet);
-          pal.position.set(wx, by+0.22, pz);
-          gCargo.add(pal);
-          if(rnd() < 0.85){
-            const bh = 0.45 + rnd()*0.55;
-            const bx = new THREE.Mesh(new THREE.BoxGeometry(0.85, bh, 1.05), matBox);
-            bx.position.set(wx, by+0.28+bh/2, pz);
-            gCargo.add(bx);
-          }
-        }
-      }
-    });
-  }
-  gRacks.add(rack);
-
-  // Etiqueta de fila (extremo sur)
-  const lb = textSprite(r.label, {fontSize:72, color:'#ffffff', bg:'rgba(232,114,12,0.95)', scale:0.85});
-  lb.position.set(wx, 1.4, toZ(RACK_Y0+RACK_LEN+1.2));
-  gLabels.add(lb);
-
-  // Números de módulo (1–7) junto a la fila BB
-  if(r.label==='BB'){
-    for(let i=0;i<MODS;i++){
-      const n = textSprite(String(i+1), {fontSize:54, color:'#2f3b47', bg:'rgba(255,255,255,0.85)', scale:0.5});
-      n.position.set(toX(0.9), 0.9, toZ(RACK_Y0 + i*3 + 1.5));
-      gLabels.add(n);
-    }
-  }
-});
-
-/* ============================================================
-   EXTINTORES (11)
-   ============================================================ */
-const EXT = [[6,2],[12,4.5],[9.5,12],[15,15.5],[21,9],[24.5,17],
-             [3.5,27.5],[9,31.5],[13.8,39],[19,45.5],[2.5,61.5]];
-const matExt = new THREE.MeshLambertMaterial({color:0xd41616});
-const geoExt = new THREE.CylinderGeometry(0.14,0.14,0.55,10);
-EXT.forEach(e=>{
-  const m = new THREE.Mesh(geoExt, matExt);
-  m.position.set(toX(e[0]), 0.38, toZ(e[1]));
-  m.castShadow = true;
-  m.userData.info = {letter:'EXT', name:'Extintor', body:'Equipo contra incendio<br>Total en bodega: 11'};
-  gExt.add(m); pickables.push(m);
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.35,0.03,6,18),
-    new THREE.MeshBasicMaterial({color:0xd41616})
-  );
-  ring.rotation.x = -Math.PI/2;
-  ring.position.set(toX(e[0]), 0.12, toZ(e[1]));
-  gExt.add(ring);
-});
-
-/* ============================================================
-   COTAS GENERALES
-   ============================================================ */
-function dimLine(p1, p2, label){
-  const mat = new THREE.LineBasicMaterial({color:0x3c4a58});
-  const g = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(p1[0],p1[1],p1[2]), new THREE.Vector3(p2[0],p2[1],p2[2])
-  ]);
-  gDims.add(new THREE.Line(g, mat));
-  [p1,p2].forEach(p=>{
-    const tick = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8),
-      new THREE.MeshBasicMaterial({color:0x3c4a58}));
-    tick.position.set(p[0],p[1],p[2]);
-    gDims.add(tick);
-  });
-  const t = textSprite(label, {fontSize:56, color:'#1c2733', bg:'rgba(255,255,255,0.9)', scale:0.9});
-  t.position.set((p1[0]+p2[0])/2, 0.8, (p1[2]+p2[2])/2);
-  gDims.add(t);
-}
-dimLine([toX(0),0.15,toZ(-2.5)], [toX(W),0.15,toZ(-2.5)], '28.20 m');
-dimLine([toX(-2.5),0.15,toZ(0)], [toX(-2.5),0.15,toZ(L)], '66.27 m');
-
-/* ============================================================
-   UI — leyenda, capas, vistas, selección
-   ============================================================ */
-const zoneList = document.getElementById('zoneList');
-ZONES.forEach(z=>{
-  const row = document.createElement('div');
-  row.className='zrow';
-  row.innerHTML = `<span class="chip" style="background:#${z.color.toString(16).padStart(6,'0')}"></span>
-                   <span class="zletter">${z.letter}</span><span>${z.name}</span>`;
-  row.onclick = ()=>{
-    const wx=toX(z.x+z.w/2), wz=toZ(z.y+z.d/2);
-    flyTo([wx+14, 16, wz+16],[wx,0.5,wz]);
-    showInfo({letter:z.letter,name:z.name,
-      body:`Dimensiones: ${z.w.toFixed(2)} m × ${z.d.toFixed(2)} m<br>Superficie: ${(z.w*z.d).toFixed(1)} m²`});
-  };
-  zoneList.appendChild(row);
-});
-
-const binds = [['lyRacks',gRacks],['lyCargo',gCargo],['lyZones',gZones],
-               ['lyWalls',gWalls],['lyLabels',gLabels],['lyExt',gExt],['lyDims',gDims]];
-binds.forEach(b=>{
-  document.getElementById(b[0]).addEventListener('change',e=>{ b[1].visible = e.target.checked; });
-});
-
-document.getElementById('toggleLegend').onclick = function(){
-  const lg = document.getElementById('legend');
-  const show = lg.style.display!=='block';
-  lg.style.display = show?'block':'none';
-  this.textContent = show?'Ocultar leyenda':'Mostrar leyenda';
-};
-
-/* Vistas predefinidas con animación */
-let flyAnim = null;
-function flyTo(pos, tgt){
-  flyAnim = {
-    p0:camera.position.clone(), p1:new THREE.Vector3(pos[0],pos[1],pos[2]),
-    t0:controls.target.clone(), t1:new THREE.Vector3(tgt[0],tgt[1],tgt[2]),
-    k:0
-  };
-}
-document.getElementById('vIso').onclick   = ()=>flyTo([42,38,58],[0,1,0]);
-document.getElementById('vTop').onclick   = ()=>flyTo([0,95,0.01],[0,0,0]);
-document.getElementById('vFront').onclick = ()=>flyTo([0,9,68],[0,3,10]);
-
-/* Selección por clic */
-const ray = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let downAt = null;
-renderer.domElement.addEventListener('pointerdown', e=>{ downAt=[e.clientX,e.clientY]; });
-renderer.domElement.addEventListener('pointerup', e=>{
-  if(!downAt) return;
-  const dx=e.clientX-downAt[0], dy=e.clientY-downAt[1];
-  downAt=null;
-  if(dx*dx+dy*dy > 25) return; // fue arrastre, no clic
-  mouse.x = (e.clientX/innerWidth)*2-1;
-  mouse.y = -(e.clientY/innerHeight)*2+1;
-  ray.setFromCamera(mouse, camera);
-  const hits = ray.intersectObjects(pickables, false);
-  const hit = hits.find(h=>isVisibleChain(h.object));
-  if(hit && hit.object.userData.info) showInfo(hit.object.userData.info);
-});
-function isVisibleChain(o){
-  while(o){ if(o.visible===false) return false; o=o.parent; }
-  return true;
-}
-function showInfo(info){
-  document.getElementById('infoLetter').textContent = info.letter;
-  document.getElementById('infoName').textContent = info.name;
-  document.getElementById('infoBody').innerHTML = info.body;
-  document.getElementById('info').style.display='block';
-}
-document.getElementById('infoClose').onclick =
-  ()=>{ document.getElementById('info').style.display='none'; };
-
-/* ---------- Bucle de render ---------- */
-function animate(){
-  requestAnimationFrame(animate);
-  if(flyAnim){
-    flyAnim.k = Math.min(1, flyAnim.k + 0.035);
-    const k = flyAnim.k;
-    const s = k<0.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
-    camera.position.lerpVectors(flyAnim.p0, flyAnim.p1, s);
-    controls.target.lerpVectors(flyAnim.t0, flyAnim.t1, s);
-    if(k>=1) flyAnim=null;
-  }
-  controls.update();
-  renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', ()=>{
-  camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
-</script>
+  <footer>
+    Argenparts AG · Layouts logísticos en 3D (Three.js)<br>
+    <a href="https://github.com/sebastianc-hub/bodega7-3d">Repositorio en GitHub</a>
+  </footer>
 </body>
 </html>
