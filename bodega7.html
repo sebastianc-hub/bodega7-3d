@@ -129,7 +129,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -147,7 +147,7 @@ controls.minDistance = 3;
 controls.maxDistance = 240;
 
 /* ---------- Iluminación tipo estudio ---------- */
-scene.add(new THREE.HemisphereLight(0xffffff, 0xaab2ba, 0.65));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa2aa, 0.5));
 const sun = new THREE.DirectionalLight(0xffffff, 1.15);
 sun.position.set(50, 65, 25);
 sun.castShadow = true;
@@ -171,9 +171,9 @@ const pickables=[];
 /* ---------- Materiales base ---------- */
 const M = {
   ground : new THREE.MeshStandardMaterial({color:0xdadee2, roughness:0.95}),
-  slab   : new THREE.MeshStandardMaterial({color:0x9ea4a9, roughness:0.88}),
+  slab   : new THREE.MeshStandardMaterial({color:0x878d93, roughness:0.88}),
   wall   : new THREE.MeshStandardMaterial({color:0xc9d2da, roughness:0.85, transparent:true, opacity:0.13, depthWrite:false}),
-  roomWall: new THREE.MeshStandardMaterial({color:0xd7cfbd, roughness:0.9}),
+  roomWall: new THREE.MeshStandardMaterial({color:0xcfc3a6, roughness:0.9}),
   roomCap: new THREE.MeshStandardMaterial({color:0xb9b09c, roughness:0.9}),
   post   : new THREE.MeshStandardMaterial({color:0x1a4f8f, roughness:0.55, metalness:0.35}),
   brace  : new THREE.MeshStandardMaterial({color:0xb4bcc2, roughness:0.5, metalness:0.5}),
@@ -315,16 +315,16 @@ for(let i=0;i<2;i++){
    ZONAS
    ============================================================ */
 const ZONES=[
- {letter:'A', name:'Zona de Carga y Descarga', x:18.2, y:55.3, w:10.0, d:10.97, color:0xe9ecef, border:0xe8b90c},
- {letter:'B', name:'Taller de Fotografía',     x:0.0,  y:36.0, w:2.0,  d:5.0,  color:0xd7cfbd, room:true},
- {letter:'C', name:'Baño',                     x:13.55,y:60.8, w:4.65, d:5.47, color:0xd7cfbd, room:true},
- {letter:'D', name:'Taller de MKT',            x:5.13, y:55.3, w:8.42, d:10.97,color:0xcfc4ad, room:true},
- {letter:'E', name:'Control de Calidad / Desarrollos / Catalogación', x:0.0, y:55.3, w:5.13, d:10.97, color:0xd7cfbd, room:true},
- {letter:'F', name:'Zona de Embalaje',         x:4.5,  y:26.0, w:8.0,  d:8.0,  color:0xdfd292, border:0xe8b90c},
- {letter:'G', name:'Almacén / Racks',          x:1.0,  y:0.5,  w:26.2, d:23.5, color:0xb9c8d9, subtle:true, border:0xe8b90c},
- {letter:'H', name:'Cocina',                   x:13.55,y:55.3, w:4.65, d:5.5,  color:0xd7cfbd, room:true},
- {letter:'I', name:'Túnel',                    x:2.0,  y:0.5,  w:3.0,  d:22.0, color:0xd9d275, tunnel:true, border:0xe8b90c},
- {letter:'Z', name:'Devoluciones',             x:16.5, y:26.0, w:2.0,  d:4.0,  color:0xb3bdd1, border:0xe8b90c},
+ {letter:'A', name:'Zona de Carga y Descarga', x:18.2, y:55.3, w:10.0, d:10.97, color:0xf4f5f6, border:0xe8b90c},
+ {letter:'B', name:'Taller de Fotografía',     x:0.0,  y:36.0, w:2.0,  d:5.0,  color:0xcfc3a6, room:true},
+ {letter:'C', name:'Baño',                     x:13.55,y:60.8, w:4.65, d:5.47, color:0xcfc3a6, room:true},
+ {letter:'D', name:'Taller de MKT',            x:5.13, y:55.3, w:8.42, d:10.97,color:0xc4b696, room:true},
+ {letter:'E', name:'Control de Calidad / Desarrollos / Catalogación', x:0.0, y:55.3, w:5.13, d:10.97, color:0xcfc3a6, room:true},
+ {letter:'F', name:'Zona de Embalaje',         x:4.5,  y:26.0, w:8.0,  d:8.0,  color:0xe2c94e, border:0xe8b90c},
+ {letter:'G', name:'Almacén / Racks',          x:1.0,  y:0.5,  w:26.2, d:23.5, color:0x91accc, subtle:true, border:0xe8b90c},
+ {letter:'H', name:'Cocina',                   x:13.55,y:55.3, w:4.65, d:5.5,  color:0xcfc3a6, room:true},
+ {letter:'I', name:'Túnel',                    x:2.0,  y:0.5,  w:3.0,  d:22.0, color:0xd3ca4a, tunnel:true, border:0xe8b90c},
+ {letter:'Z', name:'Devoluciones',             x:16.5, y:26.0, w:2.0,  d:4.0,  color:0x94a5c6, border:0xe8b90c},
 ];
 const ROOM_H=3.0;
 
@@ -336,7 +336,7 @@ ZONES.forEach(z=>{
   // piso de zona (tinte epóxico)
   const fl=new THREE.Mesh(new THREE.PlaneGeometry(z.w,z.d),
     new THREE.MeshStandardMaterial({color:z.color, roughness:0.85,
-      transparent:!!z.subtle, opacity:z.subtle?0.4:1}));
+      transparent:!!z.subtle, opacity:z.subtle?0.5:1}));
   fl.rotation.x=-Math.PI/2;
   fl.position.set(wx,0.075,wz);
   fl.receiveShadow=true;
