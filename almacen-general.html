@@ -7,62 +7,64 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#0d1b2a; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; }
+body { background:#eef1f4; font-family:'Segoe UI',Arial,sans-serif; overflow:hidden; color:#20303f; }
 canvas { display:block; }
 #ui { position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none; }
 
 #title {
   position:absolute; top:14px; left:50%; transform:translateX(-50%);
-  background:rgba(31,78,121,.93); color:#fff; padding:9px 28px;
-  border-radius:50px; font-size:15px; font-weight:700; letter-spacing:.8px;
-  box-shadow:0 2px 16px rgba(0,0,0,.5); white-space:nowrap;
+  background:rgba(255,255,255,.95); color:#20303f; padding:9px 26px;
+  border-radius:8px; font-size:14px; font-weight:700; letter-spacing:.8px;
+  border:1px solid #cbd5e0; box-shadow:0 2px 14px rgba(25,45,70,.14); white-space:nowrap;
 }
-#tabs { position:absolute; top:14px; left:14px; display:flex; gap:8px; pointer-events:auto; }
+#tabs { position:absolute; top:14px; left:14px; display:flex; gap:6px; pointer-events:auto; }
 .tab {
-  background:rgba(20,50,90,.85); color:#aac; border:1px solid rgba(100,160,220,.3);
-  padding:7px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:600;
+  background:#fff; color:#20303f; border:1px solid #cbd5e0;
+  padding:7px 15px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600;
   transition:.2s; user-select:none;
 }
-.tab:hover { background:rgba(46,117,182,.9); color:#fff; }
-.tab.on { background:#2E75B6; color:#fff; border-color:#5ca3e0; }
+.tab:hover { background:#0f62ac; color:#fff; border-color:#0f62ac; }
+.tab.on { background:#0f62ac; color:#fff; border-color:#0f62ac; }
 
 #stats {
   position:absolute; top:14px; right:14px;
-  background:rgba(10,25,50,.92); color:#cde; border-radius:10px;
-  padding:12px 18px; font-size:12px; line-height:2.1;
-  border:1px solid rgba(100,160,220,.2); pointer-events:auto; min-width:175px;
+  background:rgba(255,255,255,.95); color:#20303f; border-radius:8px;
+  padding:11px 16px; font-size:12px; line-height:2.0;
+  border:1px solid #cbd5e0; box-shadow:0 2px 14px rgba(25,45,70,.14);
+  pointer-events:auto; min-width:170px;
 }
-#stats .lbl { color:#7aabcc; font-size:10px; text-transform:uppercase; letter-spacing:.4px; }
-#stats b { color:#FFD700; font-size:14px; }
+#stats .lbl { color:#68788a; font-size:10px; text-transform:uppercase; letter-spacing:.6px; }
+#stats b { color:#0f62ac; font-size:14px; }
 
 #legend {
   position:absolute; bottom:14px; right:14px;
-  background:rgba(255,255,255,.97); border-radius:12px;
-  padding:13px 16px; min-width:200px;
-  box-shadow:0 4px 22px rgba(0,0,0,.4); pointer-events:auto;
+  background:rgba(255,255,255,.96); border-radius:8px;
+  padding:12px 15px; min-width:205px;
+  border:1px solid #cbd5e0; box-shadow:0 2px 14px rgba(25,45,70,.14); pointer-events:auto;
 }
-#legend h4 { color:#1F4E79; font-size:11px; margin-bottom:9px; text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
-.li { display:flex; align-items:center; gap:9px; margin:5px 0; }
-.lc { width:14px; height:14px; border-radius:3px; flex-shrink:0; border:1px solid rgba(0,0,0,.12); }
-.ll { font-size:11px; color:#333; }
+#legend h4 { color:#68788a; font-size:10.5px; margin-bottom:8px; text-transform:uppercase;
+  letter-spacing:1px; font-weight:700; border-bottom:1px solid #e4eaf0; padding-bottom:5px; }
+.li { display:flex; align-items:center; gap:9px; margin:4px 0; }
+.lc { width:13px; height:13px; border-radius:2px; flex-shrink:0; border:1px solid rgba(0,0,0,.2); }
+.ll { font-size:11px; color:#33424f; }
 
 #rack-info {
   position:absolute; bottom:14px; left:14px;
-  background:rgba(10,25,50,.9); color:#cde; border-radius:10px;
+  background:rgba(255,255,255,.95); color:#33424f; border-radius:8px;
   padding:10px 14px; font-size:11px; line-height:1.8;
-  border:1px solid rgba(100,160,220,.2);
+  border:1px solid #cbd5e0; box-shadow:0 2px 14px rgba(25,45,70,.14);
 }
-#rack-info b { color:#FFD700; }
+#rack-info b { color:#0f62ac; }
 #hint {
-  position:absolute; bottom:100px; left:14px;
-  background:rgba(0,0,0,.5); color:rgba(255,255,255,.7);
+  position:absolute; bottom:112px; left:14px;
+  background:rgba(32,48,63,.82); color:#e8eef5;
   border-radius:8px; padding:7px 12px; font-size:11px; line-height:1.9;
 }
 </style>
 </head>
 <body>
 <div id="ui">
-  <div id="title"> LAYOUT 3D – ALMACÉN ARGENPARTS AG</div>
+  <div id="title">LAYOUT 3D · ALMACÉN ARGENPARTS AG</div>
   <div id="tabs">
     <a class="tab" href="./" style="text-decoration:none;">◄ Menú</a>
     <button class="tab on" onclick="switchW(1,this)">Bodegas 1 · 2 · 3 · 5</button>
@@ -92,7 +94,7 @@ canvas { display:block; }
   </div>
   <div id="hint"> Arrastrar: Rotar &nbsp;|&nbsp; Rueda: Zoom<br>Clic derecho: Mover</div>
   <div style="position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:10.5px;
-       color:rgba(180,205,230,0.5);pointer-events:none;user-select:none;letter-spacing:.3px;z-index:999;">
+       color:rgba(70,90,110,0.55);pointer-events:none;user-select:none;letter-spacing:.3px;z-index:999;">
     Elaborado por Sebastián C. · Argenparts AG
   </div>
 </div>
@@ -102,8 +104,8 @@ canvas { display:block; }
 // SCENE
 // ═══════════════════════════════════════════════════════════════
 var scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0d1b2a);
-scene.fog = new THREE.FogExp2(0x0d1b2a, 0.005);
+scene.background = new THREE.Color(0xeef1f4);
+
 
 var camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 600);
 camera.position.set(25, 45, 85);
@@ -113,11 +115,14 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
 
-var ambLight = new THREE.AmbientLight(0xffffff, 0.5);
+var ambLight = new THREE.AmbientLight(0xffffff, 0.42);
 scene.add(ambLight);
-var sun = new THREE.DirectionalLight(0xfff8e0, 1.0);
+var sun = new THREE.DirectionalLight(0xffffff, 1.1);
 sun.position.set(30, 80, 50);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048,2048);
@@ -125,12 +130,12 @@ sun.shadow.camera.left=-80; sun.shadow.camera.right=80;
 sun.shadow.camera.top=80;   sun.shadow.camera.bottom=-80;
 sun.shadow.camera.far=200;
 scene.add(sun);
-scene.add(new THREE.HemisphereLight(0x87CEEB, 0x3a4030, 0.4));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa2aa, 0.45));
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
-var matPost = new THREE.MeshPhongMaterial({ color:0x777788 });
+var matPost = new THREE.MeshPhongMaterial({ color:0x1a4f8f, shininess:60 });
 
 function makeSprite(text, fg, bg, cw, ch) {
   cw=cw||256; ch=ch||52;
@@ -153,10 +158,10 @@ function makeSprite(text, fg, bg, cw, ch) {
 
 function addZoneFloor(parent, x, z, w, d, color) {
   var geo=new THREE.PlaneGeometry(w,d);
-  var m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:color,transparent:true,opacity:0.82}));
+  var m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:color,transparent:true,opacity:0.5}));
   m.rotation.x=-Math.PI/2; m.position.set(x+w/2,0.01,z+d/2); m.receiveShadow=true;
   parent.add(m);
-  var el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x444455}));
+  var el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x6a7480}));
   el.rotation.x=-Math.PI/2; el.position.set(x+w/2,0.02,z+d/2);
   parent.add(el);
 }
@@ -207,7 +212,7 @@ function addRack(parent, x, z, modules, levels, orient, opts) {
 
   // ── Vigas/shelves: (levels+1) × modules ───────────────────────
   var beamColor = opts.color || 0x5B9BD5;
-  var beamMat   = new THREE.MeshPhongMaterial({color:beamColor});
+  var beamMat   = new THREE.MeshPhongMaterial({color:beamColor, shininess:55});
   for(var lv=0; lv<=levels; lv++){
     for(var mb=0; mb<modules; mb++){
       var bLen = ML - PT;
@@ -227,7 +232,7 @@ function addRack(parent, x, z, modules, levels, orient, opts) {
   }
 
   // ── Cajas de producto simuladas ────────────────────────────────
-  var bColors=[0x4472C4,0x70AD47,0xED7D31,0x5B9BD5,0xC55A11,0x264478,0x375623,0xFF7F7F];
+  var bColors=[0xb5854f,0xc49a6c,0xa87b4a,0xcaa273,0xb08557,0xbf9265,0xaa8050,0xc09a6e];
   var bLen2, bW2, bH2;
   for(var lv2=0; lv2<levels; lv2++){
     for(var mb2=0; mb2<modules; mb2++){
@@ -291,7 +296,7 @@ function addSolidBox(parent, x, z, w, d, h, color, lbl){
 
 function addWalls(parent,W,D,H){
   H=H||8;
-  var mat=new THREE.MeshPhongMaterial({color:0xE8EEF5,transparent:true,opacity:0.15,side:THREE.DoubleSide});
+  var mat=new THREE.MeshPhongMaterial({color:0xb8c2cc,transparent:true,opacity:0.12,side:THREE.DoubleSide});
   var fw=new THREE.Mesh(new THREE.PlaneGeometry(W,H),mat);
   fw.position.set(W/2,H/2,0); parent.add(fw);
   var bw=fw.clone(); bw.position.set(W/2,H/2,D); parent.add(bw);
@@ -301,7 +306,7 @@ function addWalls(parent,W,D,H){
 }
 
 function addFloor(parent,W,D){
-  var m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshLambertMaterial({color:0xBBBBBB}));
+  var m=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshLambertMaterial({color:0xa6abb0}));
   m.rotation.x=-Math.PI/2; m.position.set(W/2,0,D/2); m.receiveShadow=true;
   parent.add(m);
   var grid=new THREE.GridHelper(Math.max(W,D),Math.max(W,D),0x888888,0xCCCCCC);
@@ -403,18 +408,18 @@ scene.add(wh1);
 
   // ── CUADRÍCULA + COORDENADAS EN PISO ──────────────────────────
   // Líneas de cuadrante cada 4 m (gris sutil)
-  var gc1=0x666666;
+  var gc1=0x9aa0a5;
   for(var qx1=4;qx1<W;qx1+=4){ addFloorLine(wh1,qx1,0,qx1,D,0.06,gc1); }
   for(var qz1=4;qz1<D;qz1+=4){ addFloorLine(wh1,0,qz1,W,qz1,0.06,gc1); }
 
   // Etiquetas eje X (amarillo) — a lo largo de la pared z=0
   for(var ax1=0;ax1<=W;ax1+=4){
-    var spax1=makeSprite('X='+ax1,'#FFD700','rgba(0,0,0,0.82)',86,28);
+    var spax1=makeSprite('X='+ax1,'#3c4c5c','rgba(255,255,255,0.9)',86,28);
     spax1.position.set(ax1,0.35,0.8); spax1.scale.set(1.35,0.45,1); wh1.add(spax1);
   }
   // Etiquetas eje Z (celeste) — a lo largo de la pared x=0
   for(var az1=0;az1<=D;az1+=4){
-    var spaz1=makeSprite('Z='+az1,'#66DDFF','rgba(0,0,0,0.82)',86,28);
+    var spaz1=makeSprite('Z='+az1,'#3c4c5c','rgba(255,255,255,0.9)',86,28);
     spaz1.position.set(0.8,0.35,az1); spaz1.scale.set(1.35,0.45,1); wh1.add(spaz1);
   }
 
@@ -1365,23 +1370,23 @@ scene.add(wh7);
 
   // ── CUADRÍCULA + EJES X / Y EN PISO ───────────────────────────
   // Líneas de cuadrante cada 4 m (gris sutil)
-  var gc=0x777777;
+  var gc=0x9aa0a5;
   for(var qx=4;qx<W;qx+=4){ addFloorLine(wh7,qx,0,qx,D,0.06,gc); }
   for(var qz=4;qz<D;qz+=4){ addFloorLine(wh7,0,qz,W,qz,0.06,gc); }
   // Etiquetas eje X (amarillo, a lo largo de la pared trasera z≈0)
   for(var ax=0;ax<=W;ax+=4){
-    var spax=makeSprite('X='+ax,'#FFD700','rgba(0,0,0,0.80)',82,28);
+    var spax=makeSprite('X='+ax,'#3c4c5c','rgba(255,255,255,0.9)',82,28);
     spax.position.set(ax,0.35,0.7); spax.scale.set(1.3,0.44,1); wh7.add(spax);
   }
   // Etiquetas eje Y (celeste, a lo largo de la pared izquierda x≈0)
   for(var ay=0;ay<=D;ay+=4){
-    var spay=makeSprite('Y='+ay,'#66DDFF','rgba(0,0,0,0.80)',82,28);
+    var spay=makeSprite('Y='+ay,'#3c4c5c','rgba(255,255,255,0.9)',82,28);
     spay.position.set(0.7,0.35,ay); spay.scale.set(1.3,0.44,1); wh7.add(spay);
   }
   // Títulos de eje
-  var spXT=makeSprite('──── EJE  X ────►','#FFD700','rgba(0,0,0,0.85)',240,34);
+  var spXT=makeSprite('──── EJE  X ────►','#3c4c5c','rgba(255,255,255,0.9)',240,34);
   spXT.position.set(13,0.5,-1.2); spXT.scale.set(3.6,0.54,1); wh7.add(spXT);
-  var spYT=makeSprite('──── EJE  Y ────►','#66DDFF','rgba(0,0,0,0.85)',240,34);
+  var spYT=makeSprite('──── EJE  Y ────►','#3c4c5c','rgba(255,255,255,0.9)',240,34);
   spYT.position.set(-1.5,0.5,18); spYT.scale.set(3.6,0.54,1); wh7.add(spYT);
 
   // ── ZONAS DE PISO ──────────────────────────────────────────────
@@ -1701,7 +1706,7 @@ window.addEventListener('resize',function(){
   left:50%;
   transform:translate(-50%,-50%);
   width:200px;
-  opacity:0.18;
+  opacity:0.09;
   pointer-events:none;
   z-index:9999;
   filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4));
