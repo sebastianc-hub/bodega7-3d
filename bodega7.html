@@ -3,95 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bodega 7 — Layout 3D Interactivo | Argenparts</title>
+<title>Bodega 7 — Layout 3D | Argenparts AG</title>
 <style>
-  :root{
-    --panel-bg: rgba(255,255,255,0.92);
-    --ink:#1c2733;
-    --accent:#1e5aa8;
-  }
+  :root{ --ink:#20303f; --accent:#0f62ac; --line:#cbd5e0; }
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{width:100%;height:100%;overflow:hidden;font-family:'Segoe UI',Roboto,Arial,sans-serif;color:var(--ink);}
   #app{width:100%;height:100%;}
   canvas{display:block;}
 
   .panel{
-    position:absolute;background:var(--panel-bg);border:1px solid #cfd8e3;
-    border-radius:10px;box-shadow:0 4px 18px rgba(20,40,70,.18);backdrop-filter:blur(6px);
+    position:absolute;background:rgba(255,255,255,.95);border:1px solid var(--line);
+    border-radius:8px;box-shadow:0 2px 14px rgba(25,45,70,.14);
   }
-  #titlebar{top:12px;left:12px;padding:10px 16px;max-width:340px;}
-  #titlebar h1{font-size:16px;letter-spacing:.4px;}
-  #titlebar p{font-size:11.5px;color:#51606f;margin-top:2px;}
+  #titlebar{top:12px;left:12px;padding:10px 16px;max-width:360px;display:flex;gap:12px;align-items:center;}
+  #titlebar svg{flex:0 0 34px;}
+  #titlebar h1{font-size:15px;letter-spacing:.5px;}
+  #titlebar p{font-size:11px;color:#5c6b7a;margin-top:2px;}
 
-  #legend{top:96px;left:12px;width:262px;max-height:calc(100% - 280px);overflow-y:auto;padding:10px 12px;}
-  #legend h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#51606f;margin-bottom:8px;}
-  .zrow{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px;}
-  .zrow:hover{background:#e8f0fa;}
-  .chip{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.25);flex:0 0 14px;}
-  .zletter{font-weight:700;width:18px;flex:0 0 18px;}
+  #legend{top:92px;left:12px;width:258px;max-height:calc(100% - 300px);overflow-y:auto;padding:10px 12px;}
+  #legend h2, #layers h2{
+    font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:#68788a;
+    margin-bottom:7px;border-bottom:1px solid #e4eaf0;padding-bottom:5px;
+  }
+  .zrow{display:flex;align-items:center;gap:8px;padding:3.5px 6px;border-radius:5px;cursor:pointer;font-size:11.5px;}
+  .zrow:hover{background:#eaf2fa;}
+  .chip{width:13px;height:13px;border-radius:2px;border:1px solid rgba(0,0,0,.22);flex:0 0 13px;}
+  .zletter{font-weight:700;width:16px;flex:0 0 16px;color:var(--accent);}
 
-  #layers{bottom:12px;left:12px;padding:10px 12px;font-size:12px;}
-  #layers h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#51606f;margin-bottom:6px;}
+  #layers{bottom:12px;left:12px;padding:10px 12px;font-size:11.5px;}
   #layers label{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;user-select:none;}
+  #layers input{accent-color:var(--accent);}
 
-  #views{top:12px;right:12px;padding:8px;display:flex;gap:6px;}
-  #views button{
-    border:1px solid #b9c6d4;background:#fff;border-radius:6px;padding:6px 12px;
-    font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;
+  #views{top:12px;right:12px;padding:6px;display:flex;gap:5px;}
+  #views a, #views button{
+    border:1px solid var(--line);background:#fff;border-radius:5px;padding:6px 13px;
+    font-size:11.5px;font-weight:600;color:var(--ink);cursor:pointer;text-decoration:none;
   }
-  #views button:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+  #views button:hover, #views a:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
 
-  #info{
-    display:none;right:12px;top:64px;width:250px;padding:12px 14px;
-  }
-  #info h3{font-size:14px;margin-bottom:4px;}
-  #info .tag{display:inline-block;background:var(--accent);color:#fff;border-radius:4px;
-    padding:1px 8px;font-size:11px;font-weight:700;margin-bottom:6px;}
-  #info p{font-size:12px;line-height:1.5;color:#3c4a58;}
-  #info .close{position:absolute;top:6px;right:10px;cursor:pointer;color:#8091a2;font-size:14px;}
+  #info{display:none;right:12px;top:62px;width:248px;padding:12px 14px;}
+  #info h3{font-size:13.5px;margin-bottom:4px;}
+  #info .tag{display:inline-block;background:var(--accent);color:#fff;border-radius:3px;
+    padding:1px 8px;font-size:10.5px;font-weight:700;margin-bottom:6px;}
+  #info p{font-size:11.5px;line-height:1.55;color:#42525f;}
+  #info .close{position:absolute;top:6px;right:10px;cursor:pointer;color:#8494a4;font-size:13px;}
 
   #hint{
     position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-    background:rgba(28,39,51,.78);color:#e8eef5;font-size:11.5px;
-    padding:6px 14px;border-radius:20px;pointer-events:none;white-space:nowrap;
+    background:rgba(32,48,63,.82);color:#e8eef5;font-size:11px;
+    padding:6px 14px;border-radius:16px;pointer-events:none;white-space:nowrap;
   }
-  #toggleLegend{position:absolute;top:62px;left:12px;font-size:11px;border:none;background:transparent;
-    color:var(--accent);cursor:pointer;text-decoration:underline;display:none;}
-  @media (max-width:760px){
-    #legend{display:none;}
-    #toggleLegend{display:block;}
-    #hint{display:none;}
-    #titlebar{max-width:230px;}
-  }
+  @media (max-width:760px){ #legend{display:none;} #hint{display:none;} #titlebar{max-width:250px;} }
 </style>
 </head>
 <body>
 <div id="app"></div>
 
 <div class="panel" id="titlebar">
-  <h1>BODEGA 7 · LAYOUT 3D</h1>
-  <p>Argenparts · 28.20 m × 66.27 m · Escala real (metros) · Racks: 5×(4 niveles) + 1×(3 niveles), 7 módulos de 3 m c/u</p>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200" width="34" height="31">
+    <path d="M95,41 Q110,15 125,41 L191,159 Q206,186 176,186 L44,186 Q14,186 29,159 Z" fill="#29ABE2"/>
+    <text x="110" y="163" font-family="Arial Black, Arial" font-weight="900" font-size="83"
+          fill="#fff" text-anchor="middle" letter-spacing="-2">AG</text>
+  </svg>
+  <div>
+    <h1>BODEGA 7 · LAYOUT 3D</h1>
+    <p>28.20 × 66.27 m · escala real · 5 racks de 4 niveles + 1 de 3 · módulos de 3 m</p>
+  </div>
 </div>
-<button id="toggleLegend">Mostrar leyenda</button>
 
 <div class="panel" id="legend">
-  <h2>Zonas (clic para ir)</h2>
+  <h2>Zonas — clic para ir</h2>
   <div id="zoneList"></div>
 </div>
 
 <div class="panel" id="layers">
   <h2>Capas</h2>
-  <label><input type="checkbox" id="lyRacks"   checked> Racks</label>
-  <label><input type="checkbox" id="lyCargo"   checked> Mercancía</label>
-  <label><input type="checkbox" id="lyZones"   checked> Zonas</label>
-  <label><input type="checkbox" id="lyWalls"   checked> Paredes</label>
-  <label><input type="checkbox" id="lyLabels"  checked> Etiquetas</label>
-  <label><input type="checkbox" id="lyExt"     checked> Extintores (11)</label>
-  <label><input type="checkbox" id="lyDims"    checked> Cotas</label>
+  <label><input type="checkbox" id="lyRacks"  checked> Racks</label>
+  <label><input type="checkbox" id="lyCargo"  checked> Mercancía</label>
+  <label><input type="checkbox" id="lyZones"  checked> Zonas y demarcación</label>
+  <label><input type="checkbox" id="lyWalls"  checked> Paredes</label>
+  <label><input type="checkbox" id="lyLabels" checked> Etiquetas</label>
+  <label><input type="checkbox" id="lyExt"    checked> Extintores (11)</label>
+  <label><input type="checkbox" id="lyDims"   checked> Cotas</label>
 </div>
 
 <div class="panel" id="views">
-  <a href="./" style="border:1px solid #b9c6d4;background:#fff;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;color:#1c2733;text-decoration:none;">◄ Menú</a>
+  <a href="./">◄ Menú</a>
   <button id="vIso">Isométrica</button>
   <button id="vTop">Planta</button>
   <button id="vFront">Frente</button>
@@ -104,244 +101,305 @@
   <p id="infoBody"></p>
 </div>
 
-<div id="hint">🖱️ Arrastrar: orbitar · Rueda: zoom · Clic derecho: desplazar · Clic en una zona: información</div>
+<div id="hint">Arrastrar: orbitar · Rueda: zoom · Clic derecho: desplazar · Clic en zona: información</div>
+<div style="position:fixed;bottom:10px;right:14px;font-size:10.5px;color:rgba(70,90,110,0.55);
+     pointer-events:none;user-select:none;letter-spacing:.3px;z-index:999;">
+  Elaborado por Sebastián C. · Argenparts AG
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 'use strict';
 /* ============================================================
-   BODEGA 7 — VISOR 3D INTERACTIVO (Argenparts)
-   Fuente: plano "Lay Out Ag Bodega 7" (SolidWorks, esc. 1:200)
-   Sistema de coordenadas del plano: x = izquierda→derecha,
-   y = arriba→abajo. Mundo 3D: X = x-14.10, Z = y-33.135.
+   BODEGA 7 — VISOR 3D (Argenparts AG) · estilo render CAD
+   Plano fuente: "Lay Out Ag Bodega 7" (SolidWorks 1:200)
+   Coordenadas de plano: x izq→der, y arriba→abajo (metros).
+   Mundo: X = x-14.10 · Z = y-33.135
    ============================================================ */
-
 const W = 28.20, L = 66.27, WALL_H = 9.0;
-const cx = W/2, cz = L/2;
-const toX = x => x - cx;
-const toZ = y => y - cz;
+const toX = x => x - W/2;
+const toZ = y => y - L/2;
 
-/* ---------- Escena base ---------- */
-const container = document.getElementById('app');
+/* ---------- Renderer / escena ---------- */
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.getElementById('app').appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xe4ebf2);
-scene.fog = new THREE.Fog(0xe4ebf2, 160, 320);
+scene.background = new THREE.Color(0xf0f2f5);
 
-const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 600);
-camera.position.set(42, 38, 58);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 800);
+camera.position.set(40, 30, 54);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 1, 0);
+controls.target.set(0, 0.8, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
-controls.maxPolarAngle = Math.PI/2 - 0.02;
-controls.minDistance = 4;
-controls.maxDistance = 220;
+controls.maxPolarAngle = Math.PI/2 - 0.01;
+controls.minDistance = 3;
+controls.maxDistance = 240;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x8a929c, 0.75));
-const sun = new THREE.DirectionalLight(0xffffff, 0.85);
-sun.position.set(45, 70, 30);
+/* ---------- Iluminación tipo estudio ---------- */
+scene.add(new THREE.HemisphereLight(0xffffff, 0xaab2ba, 0.65));
+const sun = new THREE.DirectionalLight(0xffffff, 1.15);
+sun.position.set(50, 65, 25);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left=-60; sun.shadow.camera.right=60;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-55; sun.shadow.camera.right=55;
 sun.shadow.camera.top=60;   sun.shadow.camera.bottom=-60;
-sun.shadow.camera.far=200;
+sun.shadow.camera.far=220;
+sun.shadow.bias=-0.0004;
 scene.add(sun);
+const fill = new THREE.DirectionalLight(0xdfe8f2, 0.35);
+fill.position.set(-40, 30, -30);
+scene.add(fill);
 
-/* ---------- Grupos / capas ---------- */
-const gRacks  = new THREE.Group();
-const gCargo  = new THREE.Group();
-const gZones  = new THREE.Group();
-const gWalls  = new THREE.Group();
-const gLabels = new THREE.Group();
-const gExt    = new THREE.Group();
-const gDims   = new THREE.Group();
+/* ---------- Capas ---------- */
+const gRacks=new THREE.Group(), gCargo=new THREE.Group(), gZones=new THREE.Group(),
+      gWalls=new THREE.Group(), gLabels=new THREE.Group(), gExt=new THREE.Group(),
+      gDims=new THREE.Group();
 scene.add(gRacks,gCargo,gZones,gWalls,gLabels,gExt,gDims);
+const pickables=[];
 
-const pickables = []; // meshes clicables con userData.info
+/* ---------- Materiales base ---------- */
+const M = {
+  ground : new THREE.MeshStandardMaterial({color:0xdadee2, roughness:0.95}),
+  slab   : new THREE.MeshStandardMaterial({color:0x9ea4a9, roughness:0.88}),
+  wall   : new THREE.MeshStandardMaterial({color:0xc9d2da, roughness:0.85, transparent:true, opacity:0.13, depthWrite:false}),
+  roomWall: new THREE.MeshStandardMaterial({color:0xd7cfbd, roughness:0.9}),
+  roomCap: new THREE.MeshStandardMaterial({color:0xb9b09c, roughness:0.9}),
+  post   : new THREE.MeshStandardMaterial({color:0x1a4f8f, roughness:0.55, metalness:0.35}),
+  brace  : new THREE.MeshStandardMaterial({color:0xb4bcc2, roughness:0.5, metalness:0.5}),
+  beam   : new THREE.MeshStandardMaterial({color:0xe46c0a, roughness:0.5, metalness:0.3}),
+  deck   : new THREE.MeshStandardMaterial({color:0xcdd3d8, roughness:0.6, metalness:0.4}),
+  palletW: new THREE.MeshStandardMaterial({color:0xa58352, roughness:0.95}),
+  ext    : new THREE.MeshStandardMaterial({color:0xc21807, roughness:0.4, metalness:0.2}),
+  yellow : new THREE.MeshBasicMaterial({color:0xe8b90c}),
+  edge   : new THREE.LineBasicMaterial({color:0x4a5866}),
+};
+const boxMats=[0xbb9166,0xc49a6c,0xb08557,0xcaa273].map(c=>
+  new THREE.MeshStandardMaterial({color:c, roughness:0.92}));
 
-/* ---------- Terreno y piso ---------- */
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(400,400),
-  new THREE.MeshLambertMaterial({color:0xcdd6de})
-);
-ground.rotation.x = -Math.PI/2; ground.position.y = -0.02;
-ground.receiveShadow = true;
+function edges(mesh){
+  const e=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), M.edge);
+  e.position.copy(mesh.position); e.rotation.copy(mesh.rotation);
+  return e;
+}
+
+/* ---------- Suelo exterior + losa ---------- */
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500), M.ground);
+ground.rotation.x=-Math.PI/2; ground.position.y=-0.03; ground.receiveShadow=true;
 scene.add(ground);
+const grid=new THREE.GridHelper(500,125,0xc4cad0,0xd0d5da);
+grid.position.y=-0.02; scene.add(grid);
 
-const grid = new THREE.GridHelper(400, 100, 0xb4c0cc, 0xc3cdd7);
-grid.position.y = -0.01;
-scene.add(grid);
+const slab=new THREE.Mesh(new THREE.BoxGeometry(W+1.4,0.14,L+1.4), M.slab);
+slab.position.y=0.07-0.14/2+0.07; slab.position.y=0.0; slab.receiveShadow=true;
+slab.position.set(0,0.0,0);
+scene.add(slab);
+scene.add(edges(slab));
 
-const floor = new THREE.Mesh(
-  new THREE.BoxGeometry(W, 0.1, L),
-  new THREE.MeshLambertMaterial({color:0x565b60})
-);
-floor.position.y = 0.05;
-floor.receiveShadow = true;
-scene.add(floor);
-
-/* ---------- Paredes perimetrales (translúcidas) ---------- */
-function wall(w,h,d,x,y,z){
-  const m = new THREE.Mesh(
-    new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshLambertMaterial({color:0xa8b4bf, transparent:true, opacity:0.15, depthWrite:false})
-  );
-  m.position.set(x,y,z);
-  gWalls.add(m);
-  const e = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d)),
-    new THREE.LineBasicMaterial({color:0x5d6b7a})
-  );
-  e.position.copy(m.position);
-  gWalls.add(e);
+/* ---------- Utilidades ---------- */
+function line(x1,y1,x2,y2,wd,color,h){
+  // línea pintada en piso, coords de plano
+  const dx=x2-x1, dz=y2-y1, len=Math.hypot(dx,dz);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(wd,len),
+    new THREE.MeshBasicMaterial({color:color}));
+  m.rotation.x=-Math.PI/2;
+  m.rotation.z=-Math.atan2(dx,dz);
+  m.position.set(toX((x1+x2)/2), h||0.085, toZ((y1+y2)/2));
+  return m;
 }
-const T=0.25;
-wall(W+2*T, WALL_H, T, 0, WALL_H/2, toZ(0)-T/2);       // norte
-wall(W+2*T, WALL_H, T, 0, WALL_H/2, toZ(L)+T/2);       // sur
-wall(T, WALL_H, L, toX(0)-T/2, WALL_H/2, 0);           // oeste
-wall(T, WALL_H, L, toX(W)+T/2, WALL_H/2, 0);           // este
-
-// Portones de andén (zona A, muro sur)
-for(let i=0;i<2;i++){
-  const door = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 4.2, 0.12),
-    new THREE.MeshLambertMaterial({color:0xf2f5f8})
-  );
-  door.position.set(toX(20.5 + i*4.6), 2.1, toZ(L)-0.08);
-  gWalls.add(door);
-  const de = new THREE.LineSegments(
-    new THREE.EdgesGeometry(door.geometry),
-    new THREE.LineBasicMaterial({color:0x7a8794})
-  );
-  de.position.copy(door.position);
-  gWalls.add(de);
+function zoneBorder(g,x,y,w,d,color,wd){
+  wd=wd||0.09;
+  g.add(line(x,y,x+w,y,wd,color));
+  g.add(line(x,y+d,x+w,y+d,wd,color));
+  g.add(line(x,y,x,y+d,wd,color));
+  g.add(line(x+w,y,x+w,y+d,wd,color));
 }
 
-/* ---------- Utilidad: sprite de texto ---------- */
-function textSprite(text, opts={}){
-  const {fontSize=64, color='#1c2733', bg=null, scale=1} = opts;
-  const cv = document.createElement('canvas');
-  let ctx = cv.getContext('2d');
-  ctx.font = `700 ${fontSize}px Segoe UI, Arial`;
-  const tw = ctx.measureText(text).width;
-  cv.width = tw + 40; cv.height = fontSize + 40;
-  ctx = cv.getContext('2d');
-  if(bg){
-    ctx.fillStyle = bg;
-    ctx.beginPath();
-    if(ctx.roundRect){ ctx.roundRect(0,0,cv.width,cv.height,18); } else { ctx.rect(0,0,cv.width,cv.height); }
-    ctx.fill();
-  }
-  ctx.font = `700 ${fontSize}px Segoe UI, Arial`;
-  ctx.fillStyle = color;
+function textSprite(text,opts){
+  opts=opts||{};
+  const fs=opts.fontSize||60, pad=26;
+  const cv=document.createElement('canvas');
+  let ctx=cv.getContext('2d');
+  ctx.font='600 '+fs+'px Segoe UI, Arial';
+  cv.width=ctx.measureText(text).width+pad*2; cv.height=fs+pad*1.4;
+  ctx=cv.getContext('2d');
+  ctx.fillStyle=opts.bg||'rgba(255,255,255,0.92)';
+  ctx.strokeStyle=opts.border||'rgba(70,90,110,0.6)';
+  ctx.lineWidth=3;
+  roundRect(ctx,2,2,cv.width-4,cv.height-4,14); ctx.fill(); ctx.stroke();
+  ctx.font='600 '+fs+'px Segoe UI, Arial';
+  ctx.fillStyle=opts.color||'#20303f';
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(text, cv.width/2, cv.height/2);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.anisotropy = 4;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false}));
-  const aspect = cv.width/cv.height;
-  sp.scale.set(1.6*aspect*scale, 1.6*scale, 1);
+  ctx.fillText(text,cv.width/2,cv.height/2+2);
+  const tex=new THREE.CanvasTexture(cv); tex.anisotropy=4;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false}));
+  const s=opts.scale||1;
+  sp.scale.set(1.1*(cv.width/cv.height)*s,1.1*s,1);
   return sp;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+// Texto pintado en el piso (decal) — mucho más limpio que letreros flotantes
+function floorText(txt, sub, x, y, w, d, color){
+  const res=96;
+  const cv=document.createElement('canvas');
+  cv.width=Math.max(160,Math.round(w*res)); cv.height=Math.max(160,Math.round(d*res));
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle=color||'rgba(40,55,70,0.85)';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const big=Math.min(cv.width,cv.height)*(sub?0.42:0.55);
+  ctx.font='700 '+big+'px Segoe UI, Arial';
+  ctx.fillText(txt, cv.width/2, sub?cv.height/2-big*0.18:cv.height/2);
+  if(sub){
+    let fs=big*0.16;
+    ctx.font='600 '+fs+'px Segoe UI, Arial';
+    const lines=sub.split('\n');
+    lines.forEach((ln,i)=>{
+      ctx.fillText(ln, cv.width/2, cv.height/2+big*0.38+i*fs*1.25);
+    });
+  }
+  const tex=new THREE.CanvasTexture(cv); tex.anisotropy=8;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;
+  m.position.set(toX(x+w/2),0.09,toZ(y+d/2));
+  return m;
+}
+
+/* ---------- Paredes perimetrales ---------- */
+function wall(w,h,d,x,y,z){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), M.wall);
+  m.position.set(x,y,z);
+  gWalls.add(m); gWalls.add(edges(m));
+}
+const T=0.28;
+wall(W+2*T,WALL_H,T, 0,WALL_H/2, toZ(0)-T/2);
+wall(W+2*T,WALL_H,T, 0,WALL_H/2, toZ(L)+T/2);
+wall(T,WALL_H,L, toX(0)-T/2, WALL_H/2, 0);
+wall(T,WALL_H,L, toX(W)+T/2, WALL_H/2, 0);
+
+// Portones tipo cortina (zona A, muro sur) con lamas
+for(let i=0;i<2;i++){
+  const cx=20.5+i*4.6;
+  const g=new THREE.Group();
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(3.6,0.25,0.22),
+    new THREE.MeshStandardMaterial({color:0x6b7684, roughness:0.6, metalness:0.4}));
+  frame.position.set(0,4.35,0); g.add(frame);
+  for(let s=0;s<10;s++){
+    const slat=new THREE.Mesh(new THREE.BoxGeometry(3.4,0.40,0.06),
+      new THREE.MeshStandardMaterial({color:s%2?0xb9c1c9:0xc7cfd6, roughness:0.45, metalness:0.55}));
+    slat.position.set(0,0.22+s*0.42,0); g.add(slat);
+  }
+  g.position.set(toX(cx),0,toZ(L)-0.18);
+  gWalls.add(g);
 }
 
 /* ============================================================
-   ZONAS (según leyenda del plano)
+   ZONAS
    ============================================================ */
-const ZONES = [
- {letter:'A', name:'Zona de Carga y Descarga', x:18.2, y:55.3, w:10.0, d:10.97, color:0xf5f6f8, room:false},
- {letter:'B', name:'Taller de Fotografía',     x:0.0,  y:36.0, w:2.0,  d:5.0,  color:0xc9b28a, room:true},
- {letter:'C', name:'Baño',                     x:13.55,y:60.8, w:4.65, d:5.47, color:0xc9b28a, room:true},
- {letter:'D', name:'Taller de MKT',            x:5.13, y:55.3, w:8.42, d:10.97,color:0xb9a075, room:true},
- {letter:'E', name:'Control de Calidad / Desarrollos / Catalogación', x:0.0, y:55.3, w:5.13, d:10.97, color:0xc9b28a, room:true},
- {letter:'F', name:'Zona de Embalaje',         x:4.5,  y:26.0, w:8.0,  d:8.0,  color:0xf0c95c, room:false},
- {letter:'G', name:'Almacén / Racks',          x:1.0,  y:0.5,  w:26.2, d:23.5, color:0x8fa8c8, room:false, subtle:true},
- {letter:'H', name:'Cocina',                   x:13.55,y:55.3, w:4.65, d:5.5,  color:0xc9b28a, room:true},
- {letter:'I', name:'Túnel',                    x:2.0,  y:0.5,  w:3.0,  d:22.0, color:0xf7e64a, room:false, tunnel:true},
- {letter:'Z', name:'Devoluciones',             x:16.5, y:26.0, w:2.0,  d:4.0,  color:0x9aa8c4, room:false},
+const ZONES=[
+ {letter:'A', name:'Zona de Carga y Descarga', x:18.2, y:55.3, w:10.0, d:10.97, color:0xe9ecef, border:0xe8b90c},
+ {letter:'B', name:'Taller de Fotografía',     x:0.0,  y:36.0, w:2.0,  d:5.0,  color:0xd7cfbd, room:true},
+ {letter:'C', name:'Baño',                     x:13.55,y:60.8, w:4.65, d:5.47, color:0xd7cfbd, room:true},
+ {letter:'D', name:'Taller de MKT',            x:5.13, y:55.3, w:8.42, d:10.97,color:0xcfc4ad, room:true},
+ {letter:'E', name:'Control de Calidad / Desarrollos / Catalogación', x:0.0, y:55.3, w:5.13, d:10.97, color:0xd7cfbd, room:true},
+ {letter:'F', name:'Zona de Embalaje',         x:4.5,  y:26.0, w:8.0,  d:8.0,  color:0xdfd292, border:0xe8b90c},
+ {letter:'G', name:'Almacén / Racks',          x:1.0,  y:0.5,  w:26.2, d:23.5, color:0xb9c8d9, subtle:true, border:0xe8b90c},
+ {letter:'H', name:'Cocina',                   x:13.55,y:55.3, w:4.65, d:5.5,  color:0xd7cfbd, room:true},
+ {letter:'I', name:'Túnel',                    x:2.0,  y:0.5,  w:3.0,  d:22.0, color:0xd9d275, tunnel:true, border:0xe8b90c},
+ {letter:'Z', name:'Devoluciones',             x:16.5, y:26.0, w:2.0,  d:4.0,  color:0xb3bdd1, border:0xe8b90c},
 ];
+const ROOM_H=3.0;
 
-const ROOM_H = 3.0;
 ZONES.forEach(z=>{
-  const wx = toX(z.x + z.w/2), wz = toZ(z.y + z.d/2);
-  const info = {
-    letter: z.letter, name: z.name,
-    body: `Dimensiones: ${z.w.toFixed(2)} m × ${z.d.toFixed(2)} m<br>Superficie: ${(z.w*z.d).toFixed(1)} m²`
-  };
+  const wx=toX(z.x+z.w/2), wz=toZ(z.y+z.d/2);
+  const info={letter:z.letter,name:z.name,
+    body:'Dimensiones: '+z.w.toFixed(2)+' m × '+z.d.toFixed(2)+' m<br>Superficie: '+(z.w*z.d).toFixed(1)+' m²'};
 
-  // Piso de zona
-  const fl = new THREE.Mesh(
-    new THREE.BoxGeometry(z.w, 0.06, z.d),
-    new THREE.MeshLambertMaterial({color:z.color, transparent:!!z.subtle, opacity:z.subtle?0.28:1})
-  );
-  fl.position.set(wx, 0.13, wz);
-  fl.receiveShadow = true;
-  fl.userData.info = info;
+  // piso de zona (tinte epóxico)
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(z.w,z.d),
+    new THREE.MeshStandardMaterial({color:z.color, roughness:0.85,
+      transparent:!!z.subtle, opacity:z.subtle?0.4:1}));
+  fl.rotation.x=-Math.PI/2;
+  fl.position.set(wx,0.075,wz);
+  fl.receiveShadow=true;
+  fl.userData.info=info;
   gZones.add(fl); pickables.push(fl);
 
-  const fe = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(z.w,0.06,z.d)),
-    new THREE.LineBasicMaterial({color:0x2f3b47})
-  );
-  fe.position.copy(fl.position);
-  gZones.add(fe);
+  // demarcación
+  zoneBorder(gZones, z.x, z.y, z.w, z.d, z.border||0x8a949e, z.border?0.09:0.05);
 
-  // Muros de cuartos (sin techo, para ver desde arriba)
+  // cuartos con muros reales
   if(z.room){
-    const wm = new THREE.MeshLambertMaterial({color:z.color});
-    const t=0.12;
-    const parts = [
-      [z.w, ROOM_H, t, wx, ROOM_H/2, toZ(z.y)+t/2],
-      [z.w, ROOM_H, t, wx, ROOM_H/2, toZ(z.y+z.d)-t/2],
-      [t, ROOM_H, z.d, toX(z.x)+t/2, ROOM_H/2, wz],
-      [t, ROOM_H, z.d, toX(z.x+z.w)-t/2, ROOM_H/2, wz],
+    const t=0.14;
+    const parts=[
+      [z.w,ROOM_H,t, wx,ROOM_H/2, toZ(z.y)+t/2],
+      [z.w,ROOM_H,t, wx,ROOM_H/2, toZ(z.y+z.d)-t/2],
+      [t,ROOM_H,z.d, toX(z.x)+t/2, ROOM_H/2, wz],
+      [t,ROOM_H,z.d, toX(z.x+z.w)-t/2, ROOM_H/2, wz],
     ];
     parts.forEach(p=>{
-      const m = new THREE.Mesh(new THREE.BoxGeometry(p[0],p[1],p[2]), wm);
+      const m=new THREE.Mesh(new THREE.BoxGeometry(p[0],p[1],p[2]), M.roomWall);
       m.position.set(p[3],p[4],p[5]);
-      m.castShadow = true; m.userData.info = info;
-      gZones.add(m); pickables.push(m);
-      const e = new THREE.LineSegments(
-        new THREE.EdgesGeometry(m.geometry),
-        new THREE.LineBasicMaterial({color:0x6e5f43})
-      );
-      e.position.copy(m.position);
-      gZones.add(e);
+      m.castShadow=true; m.receiveShadow=true; m.userData.info=info;
+      gZones.add(m); gZones.add(edges(m)); pickables.push(m);
+      // remate superior
+      const cap=new THREE.Mesh(new THREE.BoxGeometry(p[0]+0.02,0.07,p[2]+0.02), M.roomCap);
+      cap.position.set(p[3],ROOM_H+0.035,p[5]);
+      gZones.add(cap);
     });
   }
 
-  // Túnel: arcos amarillos
+  // túnel: estructura ligera con marcos
   if(z.tunnel){
-    const arcMat = new THREE.MeshLambertMaterial({color:0xd9c614});
+    const frameMat=new THREE.MeshStandardMaterial({color:0xc9b60e, roughness:0.5, metalness:0.3});
     for(let j=0;j<=7;j++){
-      const arc = new THREE.Mesh(new THREE.TorusGeometry(z.w/2, 0.06, 8, 20, Math.PI), arcMat);
-      arc.position.set(wx, 0.1, toZ(z.y + j*(z.d/7)));
-      gZones.add(arc);
+      const zPos=toZ(z.y+j*(z.d/7));
+      [-1,1].forEach(s=>{
+        const p=new THREE.Mesh(new THREE.BoxGeometry(0.07,2.3,0.07),frameMat);
+        p.position.set(wx+s*(z.w/2-0.05),1.15,zPos); gZones.add(p);
+      });
+      const top=new THREE.Mesh(new THREE.BoxGeometry(z.w,0.07,0.07),frameMat);
+      top.position.set(wx,2.32,zPos); gZones.add(top);
     }
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,z.d), arcMat);
-    rail.position.set(wx, z.w/2+0.1, wz);
-    gZones.add(rail);
+    [-1,1].forEach(s=>{
+      const rail=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,z.d),frameMat);
+      rail.position.set(wx+s*(z.w/2-0.05),2.32,wz); gZones.add(rail);
+    });
   }
 
-  // Etiqueta
-  const lb = textSprite(z.letter, {fontSize:90, color:'#ffffff', bg:'rgba(30,90,168,0.92)', scale:1.15});
-  lb.position.set(wx, z.room?ROOM_H+1.1:2.2, wz);
+  // texto pintado en piso
+  const tw=Math.min(z.w*0.85, 6), td=Math.min(z.d*0.7, tw*1.15);
+  gZones.add(floorText(z.letter, z.room||z.w<4?null:z.name.toUpperCase(), z.x+z.w/2-tw/2, z.y+z.d/2-td/2, tw, td));
+
+  // etiqueta flotante discreta (capa Etiquetas)
+  const lb=textSprite(z.letter+' · '+z.name,{fontSize:44,scale:0.62});
+  lb.position.set(wx, z.room?ROOM_H+0.9:1.7, wz);
   gLabels.add(lb);
 });
 
 /* ============================================================
-   RACKS — 7 módulos de 3 m (21 m); azul: postes, naranja: vigas
+   RACKS INDUSTRIALES — marcos azules arriostrados + vigas naranja
    ============================================================ */
-const RACK_Y0 = 1.0, RACK_LEN = 21.0, RACK_DEP = 1.1, MODS = 7;
-const ROWS = [
+const RACK_Y0=1.0, RACK_LEN=21.0, DEP=1.1, MODS=7;
+const ROWS=[
   {label:'BB', x:6.5,  levels:4},
   {label:'AA', x:10.0, levels:4},
   {label:'Y',  x:11.4, levels:4},
@@ -349,65 +407,82 @@ const ROWS = [
   {label:'W',  x:17.6, levels:4},
   {label:'V',  x:22.4, levels:3},
 ];
-const matPost = new THREE.MeshLambertMaterial({color:0x1e5aa8});
-const matBeam = new THREE.MeshLambertMaterial({color:0xe8720c});
-const matPallet = new THREE.MeshLambertMaterial({color:0x9c7a4c});
-const matBox  = new THREE.MeshLambertMaterial({color:0xc49a6c});
-const geoPost4 = new THREE.BoxGeometry(0.1, 6.2, 0.1);
-const geoPost3 = new THREE.BoxGeometry(0.1, 4.6, 0.1);
-const geoBeam  = new THREE.BoxGeometry(0.1, 0.12, 3.0);
-const geoPallet= new THREE.BoxGeometry(0.95, 0.12, 1.2);
+const geoPost4=new THREE.BoxGeometry(0.09,6.0,0.09);
+const geoPost3=new THREE.BoxGeometry(0.09,4.6,0.09);
+const geoBrH=new THREE.BoxGeometry(DEP-0.09,0.05,0.05);
+const geoBeam=new THREE.BoxGeometry(0.08,0.14,2.86);
+const geoDeck=new THREE.BoxGeometry(DEP-0.12,0.03,2.8);
+const geoPallet=new THREE.BoxGeometry(1.0,0.13,1.2);
+const geoBaseplate=new THREE.BoxGeometry(0.16,0.02,0.16);
 
-let seed = 7; // pseudo-aleatorio determinista
-function rnd(){ seed = (seed*9301+49297)%233280; return seed/233280; }
+let seed=13;
+function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
 
 ROWS.forEach(r=>{
-  const wx = toX(r.x);
-  const beamsY = r.levels===4 ? [1.5,3.0,4.5] : [1.7,3.4];
-  const postGeo = r.levels===4 ? geoPost4 : geoPost3;
-  const postH   = r.levels===4 ? 6.2 : 4.6;
-  const info = {
-    letter:r.label, name:`Rack ${r.label}`,
-    body:`${r.levels} niveles · ${MODS} módulos de 3 m<br>Longitud: ${RACK_LEN} m · Ubicaciones: módulos 1–7`
-  };
-  const rack = new THREE.Group();
+  const wx=toX(r.x);
+  const H = r.levels===4?6.0:4.6;
+  const beamsY = r.levels===4?[1.5,3.0,4.5]:[1.7,3.4];
+  const postGeo = r.levels===4?geoPost4:geoPost3;
+  const info={letter:r.label,name:'Rack '+r.label,
+    body:r.levels+' niveles · '+MODS+' módulos de 3 m<br>Longitud: '+RACK_LEN+' m · Altura: '+H.toFixed(1)+' m'};
+  const rack=new THREE.Group();
 
+  // marcos (frames) cada 3 m
   for(let i=0;i<=MODS;i++){
-    const zPos = toZ(RACK_Y0 + i*3);
-    [-RACK_DEP/2, RACK_DEP/2].forEach(off=>{
-      const p = new THREE.Mesh(postGeo, matPost);
-      p.position.set(wx+off, postH/2+0.1, zPos);
-      p.castShadow = true; p.userData.info = info;
+    const zPos=toZ(RACK_Y0+i*3);
+    [-DEP/2,DEP/2].forEach(off=>{
+      const p=new THREE.Mesh(postGeo,M.post);
+      p.position.set(wx+off,H/2+0.09,zPos);
+      p.castShadow=true; p.userData.info=info;
       rack.add(p); pickables.push(p);
+      const bp=new THREE.Mesh(geoBaseplate,M.brace);
+      bp.position.set(wx+off,0.1,zPos); rack.add(bp);
     });
-    // travesaño de marco
-    const brace = new THREE.Mesh(new THREE.BoxGeometry(RACK_DEP,0.06,0.06), matPost);
-    brace.position.set(wx, 0.4, zPos);
-    rack.add(brace);
+    // arriostres horizontales y diagonales del marco
+    const hs=[0.35,1.55,2.75,3.95];
+    for(let k=0;k<hs.length && hs[k]<H-0.2;k++){
+      const hb=new THREE.Mesh(geoBrH,M.brace);
+      hb.position.set(wx,hs[k]+0.09,zPos); rack.add(hb);
+      if(k>0){
+        const y0=hs[k-1], y1=hs[k];
+        const dl=Math.hypot(DEP-0.09,y1-y0);
+        const db=new THREE.Mesh(new THREE.BoxGeometry(0.04,dl,0.04),M.brace);
+        db.position.set(wx,(y0+y1)/2+0.09,zPos);
+        db.rotation.z=(k%2?1:-1)*Math.atan2(DEP-0.09,y1-y0);
+        rack.add(db);
+      }
+    }
   }
+
+  // vigas + parrilla + carga
   for(let i=0;i<MODS;i++){
-    const zPos = toZ(RACK_Y0 + i*3 + 1.5);
-    beamsY.forEach(by=>{
-      [-RACK_DEP/2, RACK_DEP/2].forEach(off=>{
-        const b = new THREE.Mesh(geoBeam, matBeam);
-        b.position.set(wx+off, by+0.1, zPos);
-        b.userData.info = info;
+    const zPos=toZ(RACK_Y0+i*3+1.5);
+    beamsY.forEach((by,li)=>{
+      [-DEP/2+0.045,DEP/2-0.045].forEach(off=>{
+        const b=new THREE.Mesh(geoBeam,M.beam);
+        b.position.set(wx+off,by+0.09,zPos);
+        b.castShadow=true; b.userData.info=info;
         rack.add(b); pickables.push(b);
       });
+      const dk=new THREE.Mesh(geoDeck,M.deck);
+      dk.position.set(wx,by+0.09+0.085,zPos);
+      rack.add(dk);
     });
-    // Mercancía: tarimas + cajas por nivel (incluye piso)
-    const lvls = [0].concat(beamsY);
-    lvls.forEach(by=>{
-      if(rnd() < 0.72){
-        for(let k=0;k<2;k++){
-          const pz = zPos + (k===0?-0.75:0.75);
-          const pal = new THREE.Mesh(geoPallet, matPallet);
-          pal.position.set(wx, by+0.22, pz);
+    // mercancía: tarimas + cajas ordenadas
+    [0].concat(beamsY).forEach(by=>{
+      for(let k=0;k<2;k++){
+        if(rnd()<0.8){
+          const pz=zPos+(k===0?-0.73:0.73);
+          const yBase= by===0 ? 0.09 : by+0.09+0.10;
+          const pal=new THREE.Mesh(geoPallet,M.palletW);
+          pal.position.set(wx,yBase+0.065,pz);
           gCargo.add(pal);
-          if(rnd() < 0.85){
-            const bh = 0.45 + rnd()*0.55;
-            const bx = new THREE.Mesh(new THREE.BoxGeometry(0.85, bh, 1.05), matBox);
-            bx.position.set(wx, by+0.28+bh/2, pz);
+          if(rnd()<0.9){
+            const bh=0.55+rnd()*0.35;
+            const bx=new THREE.Mesh(new THREE.BoxGeometry(0.92,bh,1.08),
+              boxMats[Math.floor(rnd()*boxMats.length)]);
+            bx.position.set(wx,yBase+0.13+bh/2,pz);
+            bx.castShadow=true;
             gCargo.add(bx);
           }
         }
@@ -416,159 +491,139 @@ ROWS.forEach(r=>{
   }
   gRacks.add(rack);
 
-  // Etiqueta de fila (extremo sur)
-  const lb = textSprite(r.label, {fontSize:72, color:'#ffffff', bg:'rgba(232,114,12,0.95)', scale:0.85});
-  lb.position.set(wx, 1.4, toZ(RACK_Y0+RACK_LEN+1.2));
+  // etiqueta de fila al extremo sur
+  const lb=textSprite('Rack '+r.label,{fontSize:46,scale:0.6,color:'#fff',
+    bg:'rgba(15,98,172,0.95)',border:'rgba(10,60,110,0.8)'});
+  lb.position.set(wx,1.3,toZ(RACK_Y0+RACK_LEN+1.3));
   gLabels.add(lb);
+});
 
-  // Números de módulo (1–7) junto a la fila BB
-  if(r.label==='BB'){
-    for(let i=0;i<MODS;i++){
-      const n = textSprite(String(i+1), {fontSize:54, color:'#2f3b47', bg:'rgba(255,255,255,0.85)', scale:0.5});
-      n.position.set(toX(0.9), 0.9, toZ(RACK_Y0 + i*3 + 1.5));
-      gLabels.add(n);
-    }
-  }
+// números de módulo pintados en piso junto a fila BB
+for(let i=0;i<MODS;i++){
+  gZones.add(floorText(String(i+1),null,0.35,RACK_Y0+i*3+1.0,1.0,1.0,'rgba(50,65,80,0.8)'));
+}
+// marcado de pasillos (líneas amarillas entre filas)
+[[8.2],[13.8],[19.9],[24.6]].forEach(a=>{
+  gZones.add(line(a[0]-1.05,1.0,a[0]-1.05,23.0,0.08,0xe8b90c));
+  gZones.add(line(a[0]+1.05,1.0,a[0]+1.05,23.0,0.08,0xe8b90c));
 });
 
 /* ============================================================
-   EXTINTORES (11)
+   EXTINTORES (11) — con señal en piso
    ============================================================ */
-const EXT = [[6,2],[12,4.5],[9.5,12],[15,15.5],[21,9],[24.5,17],
-             [3.5,27.5],[9,31.5],[13.8,39],[19,45.5],[2.5,61.5]];
-const matExt = new THREE.MeshLambertMaterial({color:0xd41616});
-const geoExt = new THREE.CylinderGeometry(0.14,0.14,0.55,10);
+const EXT=[[6,2],[12,4.5],[9.5,12],[15,15.5],[21,9],[24.5,17],
+           [3.5,27.5],[9,31.5],[13.8,39],[19,45.5],[2.5,61.5]];
+const geoExtB=new THREE.CylinderGeometry(0.12,0.12,0.5,14);
+const geoExtT=new THREE.CylinderGeometry(0.035,0.05,0.09,10);
 EXT.forEach(e=>{
-  const m = new THREE.Mesh(geoExt, matExt);
-  m.position.set(toX(e[0]), 0.38, toZ(e[1]));
-  m.castShadow = true;
-  m.userData.info = {letter:'EXT', name:'Extintor', body:'Equipo contra incendio<br>Total en bodega: 11'};
-  gExt.add(m); pickables.push(m);
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.35,0.03,6,18),
-    new THREE.MeshBasicMaterial({color:0xd41616})
-  );
-  ring.rotation.x = -Math.PI/2;
-  ring.position.set(toX(e[0]), 0.12, toZ(e[1]));
-  gExt.add(ring);
+  const g=new THREE.Group();
+  const b=new THREE.Mesh(geoExtB,M.ext); b.position.y=0.34; b.castShadow=true;
+  b.userData.info={letter:'EXT',name:'Extintor',body:'Equipo contra incendio<br>Total en bodega: 11'};
+  g.add(b); pickables.push(b);
+  const t=new THREE.Mesh(geoExtT,new THREE.MeshStandardMaterial({color:0x222222}));
+  t.position.y=0.63; g.add(t);
+  // cuadro rojo pintado en piso
+  const sq=new THREE.Mesh(new THREE.PlaneGeometry(0.75,0.75),
+    new THREE.MeshBasicMaterial({color:0xc21807,transparent:true,opacity:0.5}));
+  sq.rotation.x=-Math.PI/2; sq.position.y=0.088; g.add(sq);
+  g.position.set(toX(e[0]),0,toZ(e[1]));
+  gExt.add(g);
 });
 
 /* ============================================================
-   COTAS GENERALES
+   COTAS estilo plano
    ============================================================ */
-function dimLine(p1, p2, label){
-  const mat = new THREE.LineBasicMaterial({color:0x3c4a58});
-  const g = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(p1[0],p1[1],p1[2]), new THREE.Vector3(p2[0],p2[1],p2[2])
-  ]);
-  gDims.add(new THREE.Line(g, mat));
-  [p1,p2].forEach(p=>{
-    const tick = new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8),
-      new THREE.MeshBasicMaterial({color:0x3c4a58}));
-    tick.position.set(p[0],p[1],p[2]);
-    gDims.add(tick);
+function dim(p1,p2,label){
+  const a=new THREE.Vector3(p1[0],p1[1],p1[2]), b=new THREE.Vector3(p2[0],p2[1],p2[2]);
+  const mat=new THREE.LineBasicMaterial({color:0x5b6a78});
+  gDims.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),mat));
+  // flechas
+  const dir=b.clone().sub(a).normalize();
+  [ [a,dir], [b,dir.clone().negate()] ].forEach(pr=>{
+    const cone=new THREE.Mesh(new THREE.ConeGeometry(0.14,0.5,8),
+      new THREE.MeshBasicMaterial({color:0x5b6a78}));
+    cone.position.copy(pr[0].clone().addScaledVector(pr[1],0.25));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),pr[1]);
+    gDims.add(cone);
   });
-  const t = textSprite(label, {fontSize:56, color:'#1c2733', bg:'rgba(255,255,255,0.9)', scale:0.9});
-  t.position.set((p1[0]+p2[0])/2, 0.8, (p1[2]+p2[2])/2);
+  const t=textSprite(label,{fontSize:42,scale:0.75});
+  t.position.set((a.x+b.x)/2,0.65,(a.z+b.z)/2);
   gDims.add(t);
 }
-dimLine([toX(0),0.15,toZ(-2.5)], [toX(W),0.15,toZ(-2.5)], '28.20 m');
-dimLine([toX(-2.5),0.15,toZ(0)], [toX(-2.5),0.15,toZ(L)], '66.27 m');
+dim([toX(0),0.1,toZ(-2.6)],[toX(W),0.1,toZ(-2.6)],'28.20 m');
+dim([toX(-2.6),0.1,toZ(0)],[toX(-2.6),0.1,toZ(L)],'66.27 m');
 
 /* ============================================================
-   UI — leyenda, capas, vistas, selección
+   UI
    ============================================================ */
-const zoneList = document.getElementById('zoneList');
+const zoneList=document.getElementById('zoneList');
 ZONES.forEach(z=>{
-  const row = document.createElement('div');
+  const row=document.createElement('div');
   row.className='zrow';
-  row.innerHTML = `<span class="chip" style="background:#${z.color.toString(16).padStart(6,'0')}"></span>
-                   <span class="zletter">${z.letter}</span><span>${z.name}</span>`;
-  row.onclick = ()=>{
+  row.innerHTML='<span class="chip" style="background:#'+z.color.toString(16).padStart(6,'0')+'"></span>'+
+    '<span class="zletter">'+z.letter+'</span><span>'+z.name+'</span>';
+  row.onclick=()=>{
     const wx=toX(z.x+z.w/2), wz=toZ(z.y+z.d/2);
-    flyTo([wx+14, 16, wz+16],[wx,0.5,wz]);
+    flyTo([wx+13,13,wz+14],[wx,0.5,wz]);
     showInfo({letter:z.letter,name:z.name,
-      body:`Dimensiones: ${z.w.toFixed(2)} m × ${z.d.toFixed(2)} m<br>Superficie: ${(z.w*z.d).toFixed(1)} m²`});
+      body:'Dimensiones: '+z.w.toFixed(2)+' m × '+z.d.toFixed(2)+' m<br>Superficie: '+(z.w*z.d).toFixed(1)+' m²'});
   };
   zoneList.appendChild(row);
 });
 
-const binds = [['lyRacks',gRacks],['lyCargo',gCargo],['lyZones',gZones],
-               ['lyWalls',gWalls],['lyLabels',gLabels],['lyExt',gExt],['lyDims',gDims]];
-binds.forEach(b=>{
-  document.getElementById(b[0]).addEventListener('change',e=>{ b[1].visible = e.target.checked; });
+[['lyRacks',gRacks],['lyCargo',gCargo],['lyZones',gZones],['lyWalls',gWalls],
+ ['lyLabels',gLabels],['lyExt',gExt],['lyDims',gDims]].forEach(b=>{
+  document.getElementById(b[0]).addEventListener('change',e=>{ b[1].visible=e.target.checked; });
 });
 
-document.getElementById('toggleLegend').onclick = function(){
-  const lg = document.getElementById('legend');
-  const show = lg.style.display!=='block';
-  lg.style.display = show?'block':'none';
-  this.textContent = show?'Ocultar leyenda':'Mostrar leyenda';
-};
-
-/* Vistas predefinidas con animación */
-let flyAnim = null;
-function flyTo(pos, tgt){
-  flyAnim = {
-    p0:camera.position.clone(), p1:new THREE.Vector3(pos[0],pos[1],pos[2]),
-    t0:controls.target.clone(), t1:new THREE.Vector3(tgt[0],tgt[1],tgt[2]),
-    k:0
-  };
+let flyAnim=null;
+function flyTo(pos,tgt){
+  flyAnim={p0:camera.position.clone(),p1:new THREE.Vector3(pos[0],pos[1],pos[2]),
+           t0:controls.target.clone(),t1:new THREE.Vector3(tgt[0],tgt[1],tgt[2]),k:0};
 }
-document.getElementById('vIso').onclick   = ()=>flyTo([42,38,58],[0,1,0]);
-document.getElementById('vTop').onclick   = ()=>flyTo([0,95,0.01],[0,0,0]);
-document.getElementById('vFront').onclick = ()=>flyTo([0,9,68],[0,3,10]);
+document.getElementById('vIso').onclick  =()=>flyTo([40,30,54],[0,0.8,0]);
+document.getElementById('vTop').onclick  =()=>flyTo([0,92,0.01],[0,0,0]);
+document.getElementById('vFront').onclick=()=>flyTo([0,7.5,64],[0,2.5,8]);
 
-/* Selección por clic */
-const ray = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let downAt = null;
-renderer.domElement.addEventListener('pointerdown', e=>{ downAt=[e.clientX,e.clientY]; });
-renderer.domElement.addEventListener('pointerup', e=>{
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2();
+let downAt=null;
+renderer.domElement.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
+renderer.domElement.addEventListener('pointerup',e=>{
   if(!downAt) return;
-  const dx=e.clientX-downAt[0], dy=e.clientY-downAt[1];
-  downAt=null;
-  if(dx*dx+dy*dy > 25) return; // fue arrastre, no clic
-  mouse.x = (e.clientX/innerWidth)*2-1;
-  mouse.y = -(e.clientY/innerHeight)*2+1;
-  ray.setFromCamera(mouse, camera);
-  const hits = ray.intersectObjects(pickables, false);
-  const hit = hits.find(h=>isVisibleChain(h.object));
-  if(hit && hit.object.userData.info) showInfo(hit.object.userData.info);
+  const dx=e.clientX-downAt[0], dy=e.clientY-downAt[1]; downAt=null;
+  if(dx*dx+dy*dy>25) return;
+  mouse.x=(e.clientX/innerWidth)*2-1; mouse.y=-(e.clientY/innerHeight)*2+1;
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(pickables,false);
+  const hit=hits.find(h=>visible(h.object));
+  if(hit&&hit.object.userData.info) showInfo(hit.object.userData.info);
 });
-function isVisibleChain(o){
-  while(o){ if(o.visible===false) return false; o=o.parent; }
-  return true;
-}
+function visible(o){ while(o){ if(o.visible===false) return false; o=o.parent; } return true; }
 function showInfo(info){
-  document.getElementById('infoLetter').textContent = info.letter;
-  document.getElementById('infoName').textContent = info.name;
-  document.getElementById('infoBody').innerHTML = info.body;
+  document.getElementById('infoLetter').textContent=info.letter;
+  document.getElementById('infoName').textContent=info.name;
+  document.getElementById('infoBody').innerHTML=info.body;
   document.getElementById('info').style.display='block';
 }
-document.getElementById('infoClose').onclick =
-  ()=>{ document.getElementById('info').style.display='none'; };
+document.getElementById('infoClose').onclick=()=>{document.getElementById('info').style.display='none';};
 
-/* ---------- Bucle de render ---------- */
-function animate(){
+(function animate(){
   requestAnimationFrame(animate);
   if(flyAnim){
-    flyAnim.k = Math.min(1, flyAnim.k + 0.035);
-    const k = flyAnim.k;
-    const s = k<0.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
-    camera.position.lerpVectors(flyAnim.p0, flyAnim.p1, s);
-    controls.target.lerpVectors(flyAnim.t0, flyAnim.t1, s);
+    flyAnim.k=Math.min(1,flyAnim.k+0.04);
+    const k=flyAnim.k, s=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    camera.position.lerpVectors(flyAnim.p0,flyAnim.p1,s);
+    controls.target.lerpVectors(flyAnim.t0,flyAnim.t1,s);
     if(k>=1) flyAnim=null;
   }
   controls.update();
-  renderer.render(scene, camera);
-}
-animate();
+  renderer.render(scene,camera);
+})();
 
-window.addEventListener('resize', ()=>{
-  camera.aspect = innerWidth/innerHeight;
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(innerWidth,innerHeight);
 });
 </script>
 </body>
