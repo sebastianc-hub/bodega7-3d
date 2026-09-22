@@ -25,11 +25,14 @@ Se puede abrir una vista directa con `?b=general`, `?b=b1`, `?b=b2`, `?b=b3`, `?
 
 1. **Borrador local.** Cada cambio se guarda solo en el navegador de quien edita (se recupera al volver a abrir el editor). Nadie más lo ve.
 2. **Compartir enlace.** Genera una liga al visor con la versión actual incrustada en la propia URL (unos 9 KB). Quien la reciba la ve tal cual, sin poder editar. Sirve para revisar una propuesta antes de publicarla.
-3. **Publicar.** Escribe `data/layouts.json` en este repositorio vía API de GitHub, con lo que la liga pública corta pasa a mostrar esa versión (GitHub Pages tarda 1 a 2 minutos). Pide una sola vez un *token* de GitHub con permiso **Contents: Read and write** sobre este repo; el token se guarda únicamente en ese navegador.
-   - Alternativa sin token: **Exportar JSON** y subir el archivo como `data/layouts.json` desde la web de GitHub (*Add file → Upload files*).
+3. **Publicar.** Un clic y una confirmación. El editor envía la versión al **servicio de publicación** (una web app de Google Apps Script en la cuenta de Sebastián, código en `apps-script/Code.gs`), y la liga pública la muestra al instante. No pide token ni inicio de sesión. El servicio guarda las últimas 8 versiones anteriores (`?action=meta` las lista, `?action=get&ts=…` recupera una).
+   - Sin conexión al servicio, la alternativa es **Exportar JSON** y subir el archivo como `data/layouts.json` desde la web de GitHub (*Add file → Upload files*); el visor lo usa como respaldo si el servicio no responde.
+   - Si algún día se quiere restringir quién publica, se define la propiedad `PIN` en el script (Configuración del proyecto → Propiedades del script) y el mismo valor en `publishPin` de `js/config.js`.
 4. **Restablecer** descarta el borrador local y recarga lo publicado. **Importar JSON** carga un respaldo.
 
-Prioridad de carga: enlace compartido `#d=…` → borrador local (solo editor) → `data/layouts.json` publicado → valores iniciales de `js/defaults.js`.
+Prioridad de carga: enlace compartido `#d=…` → borrador local con cambios sin publicar (solo editor) → servicio de publicación → `data/layouts.json` del repo → valores iniciales de `js/defaults.js`.
+
+La URL del servicio vive en `js/config.js`. Para redesplegar el script (por ejemplo tras editarlo): Apps Script → Implementar → Administrar implementaciones → ✏️ → Versión "Nueva versión" → Implementar; la URL no cambia.
 
 ## Estructura del repositorio
 
@@ -37,7 +40,9 @@ Prioridad de carga: enlace compartido `#d=…` → borrador local (solo editor) 
 |---|---|
 | `index.html` | Visor público (solo lectura) |
 | `editor.html` | Editor |
-| `data/layouts.json` | **Layout publicado** (lo que ve el público) |
+| `data/layouts.json` | Copia de respaldo del layout (el público lee primero el servicio de publicación) |
+| `apps-script/Code.gs` | Servicio de publicación (web app de Apps Script) |
+| `js/config.js` | URL del servicio de publicación y clave opcional |
 | `js/catalog.js` | Tipos de elemento, campos editables y catálogo de señalética |
 | `js/defaults.js` | Datos iniciales (respaldo si no hay JSON publicado) |
 | `js/engine.js` | Escena Three.js: constructores de racks, zonas, señales, cámaras, selección |
@@ -67,6 +72,7 @@ Coordenadas en metros; `x` a la derecha y `y` hacia abajo como en el plano, con 
 
 ## Notas técnicas
 
-- Sin dependencias locales: Three.js r134 y lz-string se cargan desde CDN. Funciona en cualquier navegador moderno, incluido móvil (el visor).
-- Cualquiera puede abrir el editor, pero sus cambios se quedan en su navegador. Modificar lo que ve el público requiere el token de GitHub o acceso de escritura al repositorio.
+- Sin dependencias externas: Three.js r134, OrbitControls y lz-string van incluidos en `vendor/` (no dependen de ningún CDN, para que funcione detrás de filtros de red). Funciona en cualquier navegador moderno con WebGL, incluido móvil (el visor).
+- Si el navegador tiene WebGL desactivado o faltan archivos, la página muestra un aviso con la causa y los pasos para corregirlo en lugar de quedarse en blanco.
+- Cualquiera puede abrir el editor, pero sus cambios se quedan en su navegador hasta que pulsa Publicar.
 - Para servir en local: `python -m http.server` en la carpeta del repo (abrir con `file://` funciona, pero sin leer `data/layouts.json`).

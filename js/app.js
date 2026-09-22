@@ -8,8 +8,9 @@
   'use strict';
   const EDIT = (window.APP_MODE || 'view') === 'edit';
   const CAT = window.CATALOG;
-  const DRAFT_KEY = 'ag-layouts-draft-v2', PUB_KEY = 'ag-layouts-published-v2', TOKEN_KEY = 'ag-gh-token';
-  const GH = { owner: 'sebastianc-hub', repo: 'bodega7-3d', path: 'data/layouts.json', branch: 'main' };
+  const DRAFT_KEY = 'ag-layouts-draft-v2', PUB_KEY = 'ag-layouts-published-v2';
+  const CFG = window.LAYOUT_CONFIG || {};
+  const PUBLISH_URL = (CFG.publishUrl || '').trim();
   const VIEWER_URL = 'index.html';
 
   let DATA = null, SOURCE = '', viewId = 'general', sel = null, tool = null, dirty = false, snapHalf = false;
@@ -76,15 +77,23 @@
     const m = location.hash.match(/[#&]d=([^&]+)/); if (!m) return null;
     try { const j = JSON.parse(LZString.decompressFromEncodedURIComponent(m[1])); return valid(j) ? j : null; } catch (e) { return null; }
   }
+  async function fetchJSON(url, ms) {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms || 9000);
+    try { const r = await fetch(url, { cache: 'no-store', signal: ctl.signal }); if (!r.ok) return null; const j = await r.json(); return valid(j) ? j : null; }
+    catch (e) { return null; } finally { clearTimeout(t); }
+  }
   async function loadData() {
     const shared = readHash(); if (shared) return { data: shared, source: 'shared' };
     if (EDIT) {
-      try { const d = localStorage.getItem(DRAFT_KEY); if (d) { const j = JSON.parse(d); if (valid(j)) return { data: j, source: d === localStorage.getItem(PUB_KEY) ? 'published' : 'draft' }; } } catch (e) { /* ignore */ }
+      // borrador local con cambios sin publicar: tiene prioridad
+      try { const d = localStorage.getItem(DRAFT_KEY); if (d && d !== localStorage.getItem(PUB_KEY)) { const j = JSON.parse(d); if (valid(j)) return { data: j, source: 'draft' }; } } catch (e) { /* ignore */ }
     }
-    try {
-      const r = await fetch('data/layouts.json?t=' + Date.now(), { cache: 'no-store' });
-      if (r.ok) { const j = await r.json(); if (valid(j)) return { data: j, source: 'published' }; }
-    } catch (e) { /* offline o file:// */ }
+    if (PUBLISH_URL) {
+      const j = await fetchJSON(PUBLISH_URL + (PUBLISH_URL.includes('?') ? '&' : '?') + 'action=get&t=' + Date.now(), 12000);
+      if (j) return { data: j, source: 'published' };
+    }
+    const local = await fetchJSON('data/layouts.json?t=' + Date.now());
+    if (local) return { data: local, source: 'published' };
     return { data: deepCopy(window.DEFAULT_DATA), source: 'defaults' };
   }
   let saveT; function markDirty() {
@@ -128,7 +137,7 @@
     const ui = $('#ui');
     ui.appendChild(el('header', { id: 'topbar' }, [
       el('div', { class: 'brand' }, [
-        el('div', { class: 'logo', html: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 200"><path d="M95,41 Q110,15 125,41 L191,159 Q206,186 176,186 L44,186 Q14,186 29,159 Z" fill="#29ABE2"/><text x="110" y="163" font-family="Arial Black, Arial" font-weight="900" font-size="83" fill="#fff" text-anchor="middle" letter-spacing="-2">AG</text></svg>' }),
+        el('div', { class: 'logo', html: '<img src="img/logo.png" alt="AG" width="34" height="34">' }),
         el('div', {}, [el('h1', { text: EDIT ? 'EDITOR DE LAYOUTS · ARGENPARTS' : 'LAYOUTS 3D · ARGENPARTS' }), el('p', { id: 'subtitle' })]),
       ]),
       el('nav', { id: 'tabs' }),
@@ -417,7 +426,7 @@
     const url = shareURL();
     const ta = el('textarea', { class: 'sharebox', readonly: '' }); ta.value = url;
     const body = el('div', {}, [
-      el('p', { class: 'muted', html: 'Este enlace abre el <b>visor de solo lectura</b> con exactamente esta versión del layout (viaja dentro del enlace, ' + Math.round(url.length / 1024) + ' KB). Quien lo reciba puede verlo pero no modificarlo.<br>Para que la liga corta <code>' + new URL(VIEWER_URL, location.href).href + '</code> muestre esta versión, usa <b>Publicar</b>.' }),
+      el('p', { class: 'muted', html: 'Este enlace abre el <b>visor de solo lectura</b> con exactamente esta versión del layout (viaja dentro del enlace, ' + Math.round(url.length / 1024) + ' KB). Quien lo reciba puede verlo pero no modificarlo.<br>Para que la liga corta <code>' + new URL(VIEWER_URL, location.href).href + '</code> muestre esta versión para todos, usa <b>Publicar</b>.' }),
       ta,
     ]);
     modal({ title: 'Compartir enlace de solo lectura', body: body, buttons: [{ label: 'Abrir visor', onClick: () => { window.open(url, '_blank'); return false; } }, { label: 'Copiar enlace', primary: true, onClick: () => { copyText(url).then(() => toast('Enlace copiado')).catch(() => { ta.select(); document.execCommand('copy'); toast('Enlace copiado'); }); return false; } }, { label: 'Cerrar' }] });
@@ -433,39 +442,38 @@
     inp.click();
   }
   function screenshot() { const a = el('a', { href: engine.screenshot(), download: 'layout-' + viewId + '.png' }); document.body.appendChild(a); a.click(); a.remove(); }
-  function askToken() {
-    return new Promise(resolve => {
-      const inp = el('input', { type: 'password', placeholder: 'github_pat_…', autocomplete: 'off', style: 'width:100%' });
-      const body = el('div', {}, [
-        el('p', { class: 'muted', html: 'Para publicar se necesita un <b>token de GitHub</b> con permiso de escritura (Contents: Read and write) sobre el repositorio <code>' + GH.owner + '/' + GH.repo + '</code>. Se guarda solo en este navegador.<br>Crear token: GitHub → Settings → Developer settings → Fine-grained tokens.' }), inp,
-      ]);
-      modal({ title: 'Token para publicar', body: body, sticky: true, buttons: [{ label: 'Cancelar', onClick: () => resolve(null) }, { label: 'Guardar y publicar', primary: true, onClick: () => { const t = inp.value.trim(); if (!t) return false; localStorage.setItem(TOKEN_KEY, t); resolve(t); } }] });
-      inp.focus();
-    });
-  }
   async function publish() {
-    let token = localStorage.getItem(TOKEN_KEY);
-    if (!token) { token = await askToken(); if (!token) return; }
-    toast('Publicando…', 8000);
-    DATA.updatedAt = new Date().toISOString();
-    const json = JSON.stringify(DATA, null, 1);
-    const content = btoa(unescape(encodeURIComponent(json)));
-    const api = 'https://api.github.com/repos/' + GH.owner + '/' + GH.repo + '/contents/' + GH.path;
-    const H = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+    if (!PUBLISH_URL) {
+      modal({ title: 'Publicación no configurada', body: '<p>Falta la URL del servicio de publicación en <code>js/config.js</code>.</p><p class="muted">Mientras tanto: <b>Exportar JSON</b> y subir el archivo como <code>data/layouts.json</code> en GitHub, o usar <b>Compartir enlace</b>.</p>' });
+      return;
+    }
+    const pub = new URL(VIEWER_URL, location.href).href;
+    const ok = await new Promise(res => modal({
+      title: 'Publicar esta versión', sticky: true,
+      body: '<p>La versión actual pasará a ser la que ve <b>todo el mundo</b> en la liga pública:</p><p><a href="' + pub + '" target="_blank" rel="noopener">' + pub + '</a></p><p class="muted">La versión anterior queda en el historial del servicio y se puede recuperar.</p>',
+      buttons: [{ label: 'Cancelar', onClick: () => res(false) }, { label: 'Publicar ahora', primary: true, onClick: () => res(true) }],
+    }));
+    if (!ok) return;
+    toast('Publicando…', 15000);
+    const payload = Object.assign({}, DATA, { updatedAt: new Date().toISOString() });
+    if (CFG.publishPin) payload._pin = CFG.publishPin;
     try {
-      const r0 = await fetch(api + '?ref=' + GH.branch, { headers: H });
-      if (r0.status === 401) { localStorage.removeItem(TOKEN_KEY); toast('Token inválido o vencido. Vuelve a intentar.'); return; }
-      const sha = r0.status === 200 ? (await r0.json()).sha : undefined;
-      const r = await fetch(api, { method: 'PUT', headers: H, body: JSON.stringify({ message: 'Layout actualizado desde el editor · ' + new Date().toLocaleString('es-MX'), content: content, sha: sha, branch: GH.branch }) });
-      if (!r.ok) { const e = await r.json().catch(() => ({})); if (r.status === 401 || r.status === 403) localStorage.removeItem(TOKEN_KEY); throw new Error(e.message || ('HTTP ' + r.status)); }
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+      // text/plain evita el preflight CORS; Apps Script redirige y fetch sigue la redirección
+      const r = await fetch(PUBLISH_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), redirect: 'follow', signal: ctl.signal });
+      clearTimeout(t);
+      const res = await r.json().catch(() => ({ ok: false, error: 'Respuesta no válida del servicio (HTTP ' + r.status + ')' }));
+      if (!res.ok) throw new Error(res.error || 'Error desconocido');
+      DATA.updatedAt = res.updatedAt || payload.updatedAt;
       const saved = JSON.stringify(DATA); localStorage.setItem(DRAFT_KEY, saved); localStorage.setItem(PUB_KEY, saved);
       SOURCE = 'published'; dirty = false; renderBadges();
-      const pub = new URL(VIEWER_URL, location.href).href;
-      modal({ title: 'Publicado ✔', body: '<p>La versión quedó guardada en el repositorio. La liga pública se actualiza en 1 a 2 minutos:</p><p><a href="' + pub + '" target="_blank" rel="noopener">' + pub + '</a></p>' });
-    } catch (e) { modal({ title: 'No se pudo publicar', body: '<p>' + (e.message || e) + '</p><p class="muted">Alternativa: usa <b>Exportar JSON</b> y sube el archivo como <code>data/layouts.json</code> en GitHub.</p>' }); }
+      modal({ title: 'Publicado ✔', body: '<p>Listo. La liga pública ya muestra esta versión (quien la tenga abierta debe recargar):</p><p><a href="' + pub + '" target="_blank" rel="noopener">' + pub + '</a></p>' });
+    } catch (e) {
+      modal({ title: 'No se pudo publicar', body: '<p>' + (e.name === 'AbortError' ? 'El servicio tardó demasiado en responder.' : (e.message || e)) + '</p><p class="muted">Tu borrador sigue guardado en este navegador. Puedes reintentar, o usar <b>Compartir enlace</b> / <b>Exportar JSON</b>.</p>' });
+    }
   }
   function resetDraft() {
-    modal({ title: 'Restablecer', body: '<p>Se descartará el borrador local y se volverá a cargar la versión publicada. Esta acción no se puede deshacer.</p>', buttons: [{ label: 'Cancelar' }, { label: 'Descartar borrador', primary: true, onClick: () => { localStorage.removeItem(DRAFT_KEY); location.hash = ''; location.reload(); } }] });
+    modal({ title: 'Restablecer', body: '<p>Se descartará el borrador local y se volverá a cargar la versión publicada. Esta acción no se puede deshacer.</p>', buttons: [{ label: 'Cancelar' }, { label: 'Descartar borrador', primary: true, onClick: () => { localStorage.removeItem(DRAFT_KEY); localStorage.removeItem(PUB_KEY); location.hash = ''; location.reload(); } }] });
   }
 
   /* ---------- interacción con el plano ---------- */
@@ -514,8 +522,24 @@
   }
 
   /* ---------- arranque ---------- */
+  function fatal(title, html) {
+    document.body.innerHTML = '<div class="fatal"><img src="img/logo.png" alt="AG"><h1>' + title + '</h1>' + html +
+      '<p class="muted small">Si el problema sigue, manda una captura de esta pantalla a quien administra los layouts. Navegador: ' + navigator.userAgent.replace(/[<>]/g, '') + '</p></div>';
+  }
+  function webglOK() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch (e) { return false; }
+  }
   async function start() {
-    engine = window.Engine($('#stage'));
+    if (!window.THREE || !window.THREE.OrbitControls || !window.LZString || !window.Engine) {
+      fatal('No se pudieron cargar los componentes de la página', '<p>Faltó descargar parte del código (carpeta <code>vendor/</code> o <code>js/</code>). Suele ser un filtro de red o una descarga incompleta.</p><p>Recarga la página con <b>Ctrl + F5</b>. Si estás en la red de la empresa, prueba con datos del celular para descartar el filtro.</p>');
+      return;
+    }
+    if (!webglOK()) {
+      fatal('Este navegador tiene desactivada la aceleración 3D (WebGL)', '<p>La vista 3D necesita WebGL. Para activarlo en Chrome o Edge:</p><ol><li>Escribe <code>chrome://settings/system</code> (o <code>edge://settings/system</code>) en la barra de direcciones.</li><li>Activa <b>"Usar aceleración por hardware cuando esté disponible"</b> y reinicia el navegador.</li><li>Si sigue igual, abre <code>chrome://flags</code>, busca <b>"Override software rendering list"</b> y ponlo en <b>Enabled</b>.</li></ol><p>También pasa en equipos administrados por la empresa con políticas que bloquean WebGL, o al entrar por Escritorio Remoto.</p>');
+      return;
+    }
+    try { engine = window.Engine($('#stage')); }
+    catch (e) { fatal('No se pudo iniciar la vista 3D', '<p><code>' + String(e && e.message || e).replace(/[<>]/g, '') + '</code></p><p>Normalmente es WebGL bloqueado por el equipo o por una extensión del navegador. Prueba en una ventana de incógnito o en otro navegador.</p>'); return; }
     window.AGLayouts = { engine: engine, data: () => DATA }; // para depuración desde la consola
     buildUI();
     const res = await loadData();
